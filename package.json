@@ -13,13 +13,20 @@
     "explore-modules": "tsx src/explore-modules.ts",
     "cadastro": "tsx src/test-cadastro.ts"
   },
-  "keywords": ["lattes", "cnpq", "automation", "mcp", "playwright"],
+  "keywords": [
+    "lattes",
+    "cnpq",
+    "automation",
+    "mcp",
+    "playwright"
+  ],
   "author": "Angelo Rosa",
   "license": "MIT",
   "description": "Automação agêntica do Currículo Lattes via Playwright + MCP Server",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@playwright/test": "^1.62.1",
+    "dotenv": "^17.4.2",
     "playwright": "^1.62.1",
     "typescript": "^7.0.2"
   },

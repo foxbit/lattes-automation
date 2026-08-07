@@ -1,22 +1,31 @@
 /**
  * Session Manager for Lattes Authentication
  * 
- * Simplified approach:
- * 1. Opens a browser pointed at the Lattes login page
- * 2. User logs in manually (gov.br, CPF, whatever method)
- * 3. System polls ALL open tabs waiting for PKG_MENU.menu to appear
- * 4. Once detected, captures that page and saves the session
+ * Two login modes:
  * 
- * No redirect automation, no click automation during login.
- * The user handles login entirely on their own.
+ * 1. Automatic (server mode): Uses GOVBR_CPF and GOVBR_SENHA from .env
+ *    to fill the gov.br login form via Playwright (headless).
+ *    Falls back to interactive if 2FA is required or credentials are missing.
+ * 
+ * 2. Interactive (GUI mode): Opens a browser for manual login.
+ *    The user handles gov.br authentication on their own.
+ *    System polls all tabs waiting for PKG_MENU.menu to appear.
+ * 
+ * Session cookies are persisted to data/auth/lattes-session.json
+ * for reuse across restarts.
  */
 
+import { config } from 'dotenv';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { join, dirname } from 'path';
+import { resolve, join, dirname } from 'path';
+
+config({ path: resolve(process.cwd(), '.env') });
 
 const LATTES_MENU_URL_PATTERN = 'cvlattesweb/PKG_MENU.menu';
-const LATTES_LOGIN_URL = 'https://wwws.cnpq.br/cvlattesweb/pkg_login.prc_form';
+const PORTAL_LATTES_URL = 'https://memoria.cnpq.br/web/portal-lattes/';
+const CNPQ_KEYCLOAK_PATTERN = 'login.cnpq.br';
+const GOVBR_SSO_PATTERN = 'sso.acesso.gov.br';
 const SESSION_FILE = join(process.cwd(), 'data', 'auth', 'lattes-session.json');
 
 export interface SessionState {
@@ -64,7 +73,7 @@ export class SessionManager {
     });
 
     this.page = await this.context.newPage();
-    await this.page.goto(LATTES_LOGIN_URL, { waitUntil: 'domcontentloaded' });
+    await this.page.goto('https://login.cnpq.br/auth/realms/cnpq/protocol/openid-connect/auth?client_id=lattes', { waitUntil: 'domcontentloaded' });
 
     console.log('⏳ Aguardando login... (faça o login e navegue até o editor do currículo)');
 
@@ -99,6 +108,180 @@ export class SessionManager {
 
     console.log(`✅ Sessão salva! Usuário: ${state.userName || '(detectado)'}`);
     return this.page;
+  }
+
+  /**
+   * Attempts automatic login using credentials from .env (GOVBR_CPF and GOVBR_SENHA).
+   * 
+   * Flow: Portal Lattes → CNPq Keycloak (CPF + password) → editor Lattes.
+   * If the account uses gov.br SSO, clicks "Entrar com gov.br" instead.
+   * 
+   * Runs headless by default (server environments).
+   * Falls back if 2FA is required or credentials are missing.
+   */
+  async loginAutomatico(): Promise<Page> {
+    this.ensureDataDir();
+
+    const cpf = process.env.GOVBR_CPF?.trim();
+    const senha = process.env.GOVBR_SENHA?.trim();
+
+    if (!cpf || !senha) {
+      throw new Error(
+        'GOVBR_CPF e GOVBR_SENHA não configurados no .env. ' +
+        'Copie .env.example para .env e preencha suas credenciais.'
+      );
+    }
+
+    console.log('🤖 Tentando login automático...');
+
+    this.browser = await chromium.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+
+    this.context = await this.browser.newContext({
+      viewport: { width: 1280, height: 900 },
+      locale: 'pt-BR',
+    });
+
+    this.page = await this.context.newPage();
+
+    // Step 1: Navigate to Portal Lattes and click the login link
+    await this.page.goto(PORTAL_LATTES_URL, { waitUntil: 'domcontentloaded' });
+    await this.page.waitForTimeout(3000);
+
+    const loginLink = this.page.locator('a[href*="cvlattesweb/pkg_login.prc_form"]').first();
+    await loginLink.waitFor({ state: 'visible', timeout: 10_000 });
+    console.log('   Clicando no link de acesso ao currículo...');
+    await loginLink.click();
+
+    // Step 2: Wait for CNPq Keycloak login page
+    await this.page.waitForURL(new RegExp(CNPQ_KEYCLOAK_PATTERN), { timeout: 15_000 });
+    await this.page.waitForTimeout(2000);
+
+    // Check if redirected to gov.br instead
+    const currentUrl = this.page.url();
+    if (currentUrl.includes(GOVBR_SSO_PATTERN)) {
+      return this.govbrSsoLogin(cpf, senha);
+    }
+
+    // Step 3: CNPq Keycloak login (CPF → password)
+    // Note: The "Entrar com gov.br" button is always present on the Keycloak page,
+    // but we always try CNPq Keycloak direct login first. Only redirect to gov.br
+    // if Keycloak itself redirects us there.
+    console.log('   Preenchendo CPF...');
+    const cpfInput = this.page.locator('#accountId');
+    await cpfInput.waitFor({ state: 'visible', timeout: 10_000 });
+    await cpfInput.click();
+    await cpfInput.fill(cpf);
+
+    const continuarBtn = this.page.locator('button:has-text("Continuar")').first();
+    await continuarBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await continuarBtn.click();
+    await this.page.waitForTimeout(5000);
+
+    // Check if redirected to gov.br
+    if (this.page.url().includes(GOVBR_SSO_PATTERN)) {
+      return this.govbrSsoLogin(cpf, senha);
+    }
+
+    // Password field should appear on Keycloak
+    console.log('   Preenchendo senha...');
+    const senhaInput = this.page.locator('#password, input[type="password"]').first();
+    await senhaInput.waitFor({ state: 'visible', timeout: 15_000 });
+    await senhaInput.click();
+    await senhaInput.fill(senha);
+
+    const entrarBtn = this.page.locator(
+      'button[type="submit"]:has-text("Entrar"), button:has-text("Entrar"), input[type="submit"]'
+    ).first();
+    await entrarBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await entrarBtn.click();
+    await this.page.waitForTimeout(3000);
+
+    // Some accounts may have 2FA on Keycloak — check if we got redirected to gov.br after password
+    if (this.page.url().includes(GOVBR_SSO_PATTERN)) {
+      console.log('   Redirecionado para gov.br após senha (2FA requerido).');
+      return this.govbrSsoLogin(cpf, senha);
+    }
+
+    console.log('⏳ Aguardando redirecionamento para o editor...');
+
+    // Step 5: Wait for Lattes editor page
+    const editorPage = await this.waitForEditorPage(60_000);
+    this.page = editorPage;
+
+    await this.saveSession();
+    return this.page;
+  }
+
+  /**
+   * Login via gov.br SSO (redirected from CNPq Keycloak).
+   */
+  private async govbrSsoLogin(cpf: string, senha: string): Promise<Page> {
+    if (!this.page) throw new Error('Page not initialized');
+    console.log('   Preenchendo CPF no gov.br...');
+    await this.page.waitForTimeout(3000);
+
+    const cpfInput = this.page.locator(
+      '#accountId, input[name="username"], input[name="login"], input[type="text"]:visible'
+    ).first();
+    await cpfInput.waitFor({ state: 'visible', timeout: 10_000 });
+    await cpfInput.click();
+    await cpfInput.fill(cpf);
+
+    const continuarBtn = this.page.locator(
+      'button[type="submit"]:has-text("Continuar"), button:has-text("Continuar"), input[type="submit"][value="Continuar"]'
+    ).first();
+    await continuarBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await continuarBtn.click();
+    await this.page.waitForTimeout(3000);
+
+    console.log('   Preenchendo senha no gov.br...');
+    const senhaInput = this.page.locator('#password, input[name="password"], input[type="password"]').first();
+    await senhaInput.waitFor({ state: 'visible', timeout: 10_000 });
+    await senhaInput.click();
+    await senhaInput.fill(senha);
+
+    const entrarBtn = this.page.locator(
+      'button[type="submit"]:has-text("Entrar"), button:has-text("Entrar"), input[type="submit"][value="Entrar"]'
+    ).first();
+    await entrarBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await entrarBtn.click();
+
+    console.log('⏳ Aguardando redirecionamento para o editor...');
+
+    // gov.br redirects back to CNPq → Lattes. Wait for editor.
+    const editorPage = await this.waitForEditorPage(60_000);
+    this.page = editorPage;
+
+    await this.saveSession();
+    return this.page;
+  }
+
+  /**
+   * Saves session state and metadata after successful login.
+   */
+  private async saveSession(): Promise<void> {
+    await this.context!.storageState({ path: SESSION_FILE });
+
+    const userName = await this.page!.textContent('h2')
+      .then(t => t?.trim())
+      .catch(() => null);
+
+    const state: SessionState = {
+      isAuthenticated: true,
+      lastValidated: new Date().toISOString(),
+      userName: userName || undefined,
+      lattesUrl: this.page!.url(),
+    };
+    writeFileSync(
+      SESSION_FILE.replace('.json', '-meta.json'),
+      JSON.stringify(state, null, 2),
+      'utf-8'
+    );
+
+    console.log(`✅ Login automático concluído! Usuário: ${state.userName || '(detectado)'}`);
   }
 
   /**
@@ -173,7 +356,8 @@ export class SessionManager {
   }
 
   /**
-   * Gets an authenticated page. Tries restore first, falls back to interactive login.
+   * Gets an authenticated page.
+   * Priority: existing session > restored session > automatic login (if credentials in .env) > interactive login.
    */
   async getAuthenticatedPage(): Promise<Page> {
     if (this.page) {
@@ -183,6 +367,15 @@ export class SessionManager {
 
     const restored = await this.restoreSession();
     if (restored) return restored;
+
+    if (process.env.GOVBR_CPF && process.env.GOVBR_SENHA) {
+      try {
+        return await this.loginAutomatico();
+      } catch (err) {
+        console.log(`⚠️  Login automático falhou: ${(err as Error).message}`);
+        console.log('   Tentando login interativo como fallback...');
+      }
+    }
 
     return this.loginInteractive();
   }
