@@ -9,9 +9,17 @@ Permite que agentes de IA (Claude, Gemini, etc.) leiam e **atualizem** seu curr�
 ## 🏗️ Arquitetura
 
 ```
-Usuário → Login manual via gov.br (uma vez)
-       → Sessão salva via cookies/storageState
-        
+┌─ Login automático (servidor) ─────────────────────────┐
+│ .env (GOVBR_CPF, GOVBR_SENHA) → Keycloak CNPq → Sessão│
+└───────────────────────────────────────────────────────┘
+                       │
+┌─ Login interativo (GUI) ──────────────────────────────┐
+│ Browser visível → gov.br/Keycloak manual → Sessão     │
+└───────────────────────────────────────────────────────┘
+                       │
+                       ▼
+         Sessão salva em data/auth/lattes-session.json
+                       │
 Agente LLM → Chama tools via MCP → Playwright navega o Lattes
                                    → Lê/preenche formulários
                                    → Lida com modais aninhados (CV1→CV2→CV3)
@@ -36,12 +44,21 @@ npm install
 npx playwright install chromium
 ```
 
+### Login automático (servidor)
+
+```bash
+cp .env.example .env
+# Edite .env com seu CPF (apenas números) e senha
+```
+
+O sistema usará essas credenciais para autenticar via **Login Único CNPq (Keycloak)** em modo headless. Se as credenciais não estiverem configuradas, fará fallback para login interativo com browser gráfico.
+
 ## 📋 Comandos
 
 | Comando | Descrição |
 |---------|-----------|
-| `npm run login` | Login interativo via gov.br (abre browser) |
-| `npm run explore` | Explorar estrutura do currículo |
+| `npm run login` | Login interativo (abre browser) — fallback se .env não configurado |
+| `npm run explore` | Explorar estrutura do currículo (usa login automático se .env existir) |
 | `npm run read -- <id>` | Ler registros de um módulo |
 | `npm run explore-modules` | Coletar schemas reais de todos os módulos |
 | `npm run cadastro -- <id>` | Teste de cadastro (preenche sem salvar) |
@@ -96,7 +113,7 @@ Configuração para agentes (Claude Desktop, etc.):
 
 ## 🛡️ Segurança
 
-- **Login manual**: Nunca armazena senha
+- **Login automático ou manual**: Credenciais no `.env` (gitignored) para servidor, ou login interativo
 - **Sessão local**: Cookies em `data/auth/` (gitignored)
 - **Confirmação obrigatória**: Escrita exige `SIM_SALVAR`
 - **Snapshots automáticos**: Screenshots antes/depois de cada operação

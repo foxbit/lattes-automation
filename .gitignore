@@ -1,9 +1,6 @@
 node_modules/
 dist/
-data/auth/
-data/snapshots/
-data/logs/
-data/cadastro-test/
+data/
 *.session.json
 .env
 
@@ -11,3 +8,4 @@ data/cadastro-test/
 Lattes/
 artefatos-manus/
 
+data/exploration/
