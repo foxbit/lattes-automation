@@ -14,7 +14,7 @@
     },
     "errors": [],
     "newForm": {
-      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_artigo.lista?f_cod=K1237839P9",
+      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_artigo.lista?f_cod=KXXXXXXXX",
       "fields": [
         {
           "label": "Incluir novo artigo div.ro",

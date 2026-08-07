@@ -13,11 +13,11 @@
         {
           "index": 0,
           "text": "1\n   \n2012... 2016\nGraduação\nFaculdade Estácio de São Luis",
-          "details": "onclick: self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo"
+          "details": "onclick: self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=KXXXXXXXX&f_seq=1&f_tipo"
         }
       ],
       "newButtonOnclick": "selecionarNivel();",
-      "editRowOnclick": "self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo=FA',true);"
+      "editRowOnclick": "self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=KXXXXXXXX&f_seq=1&f_tipo=FA',true);"
     },
     "errors": [],
     "newForm": {
@@ -26,7 +26,7 @@
       "sections": []
     },
     "editForm": {
-      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo=FA",
+      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=KXXXXXXXX&f_seq=1&f_tipo=FA",
       "fields": [
         {
           "label": "Instituição",
@@ -211,11 +211,11 @@
     "list": {
       "recordCount": 0,
       "records": [],
-      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_ATIV.inclui?f_cod=K1237839P9',true);"
+      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_ATIV.inclui?f_cod=KXXXXXXXX',true);"
     },
     "errors": [],
     "newForm": {
-      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_ATIV.inclui?f_cod=K1237839P9",
+      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_ATIV.inclui?f_cod=KXXXXXXXX",
       "fields": [
         {
           "label": "Nome da Instituição",
@@ -353,11 +353,11 @@
     "list": {
       "recordCount": 0,
       "records": [],
-      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=K1237839P9',true);"
+      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=KXXXXXXXX',true);"
     },
     "errors": [],
     "newForm": {
-      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=K1237839P9",
+      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=KXXXXXXXX",
       "fields": [
         {
           "label": "Nome do projeto",
@@ -934,7 +934,7 @@
     },
     "errors": [],
     "newForm": {
-      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=K1237839P9",
+      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=KXXXXXXXX",
       "fields": [
         {
           "label": "Nome do projeto",

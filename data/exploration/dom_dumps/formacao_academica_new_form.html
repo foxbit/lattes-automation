@@ -1149,16 +1149,16 @@ function somenteNumeros(e){
     nivel="";
     vlr=dc.f_nivel.value;
     if(what == 1){
-    url="prc_inst_form?f_cod=K1237839P9&f_nivel=" + vlr ;
+    url="prc_inst_form?f_cod=KXXXXXXXX&f_nivel=" + vlr ;
     }
     if(what == 2){
-        url="prc_inst_form?f_cod=K1237839P9&f_sta_outra=S";
+        url="prc_inst_form?f_cod=KXXXXXXXX&f_sta_outra=S";
     }
     if(what == 3){ //sw
-        url="prc_inst_form?f_cod=K1237839P9&f_sta_outra=SW";
+        url="prc_inst_form?f_cod=KXXXXXXXX&f_sta_outra=SW";
     }
     if(what == 4){ //CT
-        url="prc_inst_form?f_cod=K1237839P9&f_sta_outra=CT";
+        url="prc_inst_form?f_cod=KXXXXXXXX&f_sta_outra=CT";
     }
     self.parent.modalCV3.setarUrl(url,true,70,350,450);
     return true;
@@ -1166,7 +1166,7 @@ function somenteNumeros(e){
 
   function agencia(){
     dc.F_BOLSA[0].checked=true;
-    url="prc_agencia?f_cod=K1237839P9" ;
+    url="prc_agencia?f_cod=KXXXXXXXX" ;
     self.parent.modalCV3.setarUrl(url,true ,70,350,450);
     return;
   }
@@ -1192,7 +1192,7 @@ function somenteNumeros(e){
       }
 
       if (insttmp!=""){
-        url="prc_curso_form?f_cod=K1237839P9&f_pgm=FORM&f_nivel=" + dc.f_nivel.value + "&f_inst=" + insttmp;
+        url="prc_curso_form?f_cod=KXXXXXXXX&f_pgm=FORM&f_nivel=" + dc.f_nivel.value + "&f_inst=" + insttmp;
         fecha();
         self.parent.modalCV3.setarUrl(url,true,70,350,450);
       }
@@ -1284,7 +1284,7 @@ function pos_check(){
      document.formchk.start.value = "S";
      document.formchk.finish.value = "N";
      mostra("imagem1");
-     url="pkg_formacao.pp_valida_orientadores_lattes?f_cod=K1237839P9&f_nme=" + escape(trim(dc.f_orient.value)) + "&f_nivel=" + nv;
+     url="pkg_formacao.pp_valida_orientadores_lattes?f_cod=KXXXXXXXX&f_nme=" + escape(trim(dc.f_orient.value)) + "&f_nivel=" + nv;
      fecha();
      janela=window.open(url, "Jinst","status=no,resizable=yes,scrollbars=yes,width=5,height=5,left=0,top=0")
      window.focus();
@@ -1930,7 +1930,7 @@ dc.f_area_l.value=s;
         $.ajax({
           type: "POST",
           url: "PKG_FORMACAO.SETA_ULTIMO_PUBLICO",
-          data: {f_cod: "K1237839P9", f_seq: "", f_tipo: "FA", f_op: "E"},
+          data: {f_cod: "KXXXXXXXX", f_seq: "", f_tipo: "FA", f_op: "E"},
           async: false,
           success: function (result) {
             resultado = result;
@@ -1956,7 +1956,7 @@ dc.f_area_l.value=s;
       $.ajax({
         type: "POST",
         url: "PKG_FORMACAO.SETA_ULTIMO_PUBLICO",
-        data: {f_cod: "K1237839P9", f_seq: "", f_tipo: "FA", f_op: $("[name=f_ctr]").val()},
+        data: {f_cod: "KXXXXXXXX", f_seq: "", f_tipo: "FA", f_op: $("[name=f_ctr]").val()},
         async: false,
         success: function (result) {
           resultado = result;
@@ -2390,7 +2390,7 @@ Bolsa
                </span>
 
 <input type="hidden" name="f_ctr" value="I">
-<input type="hidden" name="f_cod" value="K1237839P9">
+<input type="hidden" name="f_cod" value="KXXXXXXXX">
 <input type="hidden" name="f_seq" value="">
 <input type="hidden" name="f_cod_inst" value="">
 <input type="hidden" name="f_cod_curso" value="">

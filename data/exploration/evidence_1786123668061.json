@@ -10,7 +10,7 @@
     "list": {
       "recordCount": 0,
       "records": [],
-      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_ATIV.inclui?f_cod=K1237839P9',true);"
+      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_ATIV.inclui?f_cod=KXXXXXXXX',true);"
     },
     "errors": [],
     "newForm": {

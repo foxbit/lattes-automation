@@ -1231,7 +1231,7 @@ $(".tela_menor").css("max-height","386px");
 
         function chamaVerificaVinculo(vcodinst,vcodinst2){
             if ((vcodinst!="")||(vcodinst2!="")) {
-              url="pkg_projeto.verifica_vinculo_ajax?f_cod=K1237839P9&f_codinst=" + vcodinst + "&f_codinstoutra=" + vcodinst2 ;
+              url="pkg_projeto.verifica_vinculo_ajax?f_cod=KXXXXXXXX&f_codinst=" + vcodinst + "&f_codinstoutra=" + vcodinst2 ;
               chamaUrl(url);
             }
             return;
@@ -1303,16 +1303,16 @@ $(".tela_menor").css("max-height","386px");
 
       //  alert("Abrir janela de instituicoes");
         fecha();
-      //  janela = window.open("PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC&f_cod=K1237839P9" ,"ji","width=650,height=400,top=200,left=200,toolbar=no,scrollbars=yes")
-            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC&f_cod=K1237839P9&F_SEQ_FUNCAO=&F_SEQ_ATIV= &F_SEQ_PROJ=",true,70,350,450);
+      //  janela = window.open("PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC&f_cod=KXXXXXXXX" ,"ji","width=650,height=400,top=200,left=200,toolbar=no,scrollbars=yes")
+            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC&f_cod=KXXXXXXXX&F_SEQ_FUNCAO=&F_SEQ_ATIV= &F_SEQ_PROJ=",true,70,350,450);
         ab=0;
         return;
       }
       function pp_equipe() {
       //  alert("Abrir janela de integrantes");
         fecha();
-      //  janela = window.open("PKG_PROJETO.pp_lista_autores?f_cod=K1237839P9&f_tipo=P" ,"ji","height=400,width=350,top=100,left=600,toolbar=no")
-            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_autores?f_cod=K1237839P9&f_tipo=P",true,70,350,450);
+      //  janela = window.open("PKG_PROJETO.pp_lista_autores?f_cod=KXXXXXXXX&f_tipo=P" ,"ji","height=400,width=350,top=100,left=600,toolbar=no")
+            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_autores?f_cod=KXXXXXXXX&f_tipo=P",true,70,350,450);
         ab=0;
         return;
       }
@@ -1324,8 +1324,8 @@ $(".tela_menor").css("max-height","386px");
           tx="TESE";
         }
         fecha();
-      //  janela = window.open("PKG_PROJETO.pp_lista_prod?f_cod=K1237839P9&f_tpo=" + tx,"ji","height=400,width=670,top=100,left=200,toolbar=no")
-            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_prod?f_cod=K1237839P9&f_tpo=" + tx,true,70,350,700);
+      //  janela = window.open("PKG_PROJETO.pp_lista_prod?f_cod=KXXXXXXXX&f_tpo=" + tx,"ji","height=400,width=670,top=100,left=200,toolbar=no")
+            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_prod?f_cod=KXXXXXXXX&f_tpo=" + tx,true,70,350,700);
         ab=0;
       }
       </script>
@@ -1485,7 +1485,7 @@ $(".tela_menor").css("max-height","386px");
           TYPE: "POST",
           url: "pkg_projeto.testa_inst",
           data: {
-              f_cod: "K1237839P9",
+              f_cod: "KXXXXXXXX",
               f_inst: pinst,
               f_inst2: pinst2        
           },
@@ -1508,7 +1508,7 @@ $.ajax({
     TYPE: "POST",
     url: "pkg_projeto.recup_dados_coautor",
     data: {
-        f_cod: "K1237839P9",
+        f_cod: "KXXXXXXXX",
         f_seq: wseq
 
 
@@ -2053,7 +2053,7 @@ return null;
 
           nivel="";
           fecha();
-          url="PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&f_cod=K1237839P9"
+          url="PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&f_cod=KXXXXXXXX"
             self.parent.modalCV3.setarUrl(url,true,70,350,450);
           ab=0;
         return;
@@ -2071,7 +2071,7 @@ return null;
 
       //    dc.f_vc_ativ.value=="";
 
-          url="PKG_PROJETO.pp_orgao_cargo?f_cod=K1237839P9&f_cod_inst=" + tpo + inst;
+          url="PKG_PROJETO.pp_orgao_cargo?f_cod=KXXXXXXXX&f_cod_inst=" + tpo + inst;
             self.parent.modalCV3.setarUrl(url,true,70,350,450);
           fecha();
       //    janela=window.open(url, "Jinst","status=no,scrollbars=yes,width=500,height=400,top=0,left=0")
@@ -4519,7 +4519,7 @@ $(document).ready(function(){
     showCloseBtn:true, width:500,
     visible:false,
     title:"Seleção de Instituição",
-    url:"PKG_TITULAR_INST_GENERICA.sele_inst?f_cod=K1237839P9"
+    url:"PKG_TITULAR_INST_GENERICA.sele_inst?f_cod=KXXXXXXXX"
   });
 
 
@@ -4527,7 +4527,7 @@ $(document).ready(function(){
     showCloseBtn:true, width:500,
     visible:false,
     title:"Seleção de Instituição",
-    url:"PKG_TITULAR_INST_GENERICA.sele_inst?f_ctr=O&f_cod=K1237839P9"
+    url:"PKG_TITULAR_INST_GENERICA.sele_inst?f_ctr=O&f_cod=KXXXXXXXX"
   });
 });
 </script>
@@ -4981,7 +4981,7 @@ Instituição de financiamento
 
       }
 
-       url = "PKG_PROJETO.EDITAR_FINANCIAMENTO?P_COD=K1237839P9&P_VALORES=" + valores + "&P_INDICE=" + _index
+       url = "PKG_PROJETO.EDITAR_FINANCIAMENTO?P_COD=KXXXXXXXX&P_VALORES=" + valores + "&P_INDICE=" + _index
        self.parent.modalCV3.setarUrl(url,true,70,350,450);
 
       //alert(valores);
@@ -5071,7 +5071,7 @@ Orientações
 </div>
 <br><br> 
 <input type="hidden" name="f_ctr" value="I">
-<input type="hidden" name="f_cod" value="K1237839P9">
+<input type="hidden" name="f_cod" value="KXXXXXXXX">
 <input type="hidden" name="f_codinst" value="">
 <input type="hidden" name="f_seq_ativ" value="">
 <input type="hidden" name="f_seq_funcao" value="">
@@ -5270,7 +5270,7 @@ Visibilidade
 
 
     <input type="hidden" name="f_ctr" value="P">
-    <input type="hidden" name="f_cod" value="K1237839P9">
+    <input type="hidden" name="f_cod" value="KXXXXXXXX">
 
 <div class="navegacao2">
   <fieldset class="tela_menor">
@@ -5696,7 +5696,7 @@ UF
            </div>
         </fieldset>
 <input type="hidden" name="f_ctr" value="I">
-<input type="hidden" name="f_cod" value="K1237839P9">
+<input type="hidden" name="f_cod" value="KXXXXXXXX">
 
         <div class="controle_peq">
            <span class="botao salvar">

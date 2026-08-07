@@ -520,12 +520,12 @@ $(document).ready(function() {
       type: "POST",
       data : {
         xml : xml,
-        cod_rh_cri : "K1237839P9"
+        cod_rh_cri : "KXXXXXXXX"
       },
       dataType : "text",
       success : function(resposta) {
         $.ajax({
-           url: "pkg_aviso_pendencia.inicio?f_cod=K1237839P9&v_modulo=IDENTIFICACAO&v_modulo=PUBLICACAO&v_modulo=DADOSPESSOAIS&v_modulo=ENDERECO&v_modulo=FORMACAO&v_modulo=ATUACAO&v_modulo=CITACOES&v_modulo=ARTIGO&v_modulo=LIVRO&v_modulo=CITACAO&v_t=" + new Date(),
+           url: "pkg_aviso_pendencia.inicio?f_cod=KXXXXXXXX&v_modulo=IDENTIFICACAO&v_modulo=PUBLICACAO&v_modulo=DADOSPESSOAIS&v_modulo=ENDERECO&v_modulo=FORMACAO&v_modulo=ATUACAO&v_modulo=CITACOES&v_modulo=ARTIGO&v_modulo=LIVRO&v_modulo=CITACAO&v_t=" + new Date(),
           dataType : "html",
           async : false,
           success : function(resposta) {
@@ -537,7 +537,7 @@ $(document).ready(function() {
           conteudo : 'A operação foi realizada com sucesso!',
           classe : 'ok'
         });
-        parent.modalCV1.setarUrl("pkg_artigo.lista?f_cod=K1237839P9&F_STA_DIVULGACAO_CIENTIFICA=", true);
+        parent.modalCV1.setarUrl("pkg_artigo.lista?f_cod=KXXXXXXXX&F_STA_DIVULGACAO_CIENTIFICA=", true);
       }
     });
   });
@@ -616,7 +616,7 @@ if(pcriticaNome){
 if(vres=="DIF"){
     alert("O nome o ISSN informado não confere com o nome do periódico cadastrado")
 } else {
- self.parent.modalCV2.setarUrl("PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_ORIGEM_WS=F&F_TITULO_PERIODICO=" +escape(pnmeperiodico) +"&F_ISSN="+pissn+ "&F_VOLUME=" + pvolume +  "&F_SERIE=" + pissue + "&F_PAG_INI="  +  ppagini +  "&F_CTR=FIV&F_COD=K1237839P9",true);
+ self.parent.modalCV2.setarUrl("PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_ORIGEM_WS=F&F_TITULO_PERIODICO=" +escape(pnmeperiodico) +"&F_ISSN="+pissn+ "&F_VOLUME=" + pvolume +  "&F_SERIE=" + pissue + "&F_PAG_INI="  +  ppagini +  "&F_CTR=FIV&F_COD=KXXXXXXXX",true);
 
 
   winArtigos.hide();
@@ -645,7 +645,7 @@ function handleIVIPSubmit() {
      var vidprod = vseleprod_array[0];
      var vidperiod = vseleprod_array[1];
 
-     self.parent.modalCV2.setarUrl("PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_ID_PERIOD="+vidperiod +"&F_ID_PROD="+vidprod +"&F_CTR=IV&F_COD=K1237839P9",true)
+     self.parent.modalCV2.setarUrl("PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_ID_PERIOD="+vidperiod +"&F_ID_PROD="+vidprod +"&F_CTR=IV&F_COD=KXXXXXXXX",true)
        winIVIP.hide();
        winFindIVIP.hide();
 }
@@ -688,7 +688,7 @@ function findPeriodico(pStrParam,pTipo) {
     visible:false,
     width:650,
     title:"Periódicos",
-     url:"pkg_artigo.find_periodico?p_str=" + pStrParam + "&p_tipo=" + pTipo + "&p_cod=K1237839P9"
+     url:"pkg_artigo.find_periodico?p_str=" + pStrParam + "&p_tipo=" + pTipo + "&p_cod=KXXXXXXXX"
   });
   winArtigos.hide();
 if(pTipo=="nome") {
@@ -742,7 +742,7 @@ if(vtipoparam == "nulo"){
 }
 
 if(vtipoparam == "doi"){
-     self.parent.modalCV2.setarUrl("PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_COD_DOI="+vcodigo +"&F_CTR=D&F_COD=K1237839P9",true)
+     self.parent.modalCV2.setarUrl("PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_COD_DOI="+vcodigo +"&F_CTR=D&F_COD=KXXXXXXXX",true)
      winArtigos.hide();
 } else{
      if(vtipoparam=="issn"){
@@ -925,7 +925,7 @@ vnmeperGlobal = vnmeper;
         visible:false,
         width:450,
         title:"Periódicos",
-        url:"pkg_artigo.inf_dados_IVIP?p_nme_periodico=" +escape(vnmeper) + "&p_issn=" + escape(vissn) + "&p_cod=K1237839P9",
+        url:"pkg_artigo.inf_dados_IVIP?p_nme_periodico=" +escape(vnmeper) + "&p_issn=" + escape(vissn) + "&p_cod=KXXXXXXXX",
         buttons: [{label:"Confirmar", callback:handleInfIVIPSubmit}]
     });
 
@@ -973,7 +973,7 @@ $(".win-bottom-bar").css("padding", "10px 0 35px");    */
 
       <em titulo="Artigos completos">
         Para alterar a ordem de importância das produções
-        <a title="Para alterar a ordem de importância das produções" href="#" onclick="parent.modalCV1.setarUrl(&quot;pkg_artigo.lista_autores_ordem?f_base=1&amp;f_cod=K1237839P9&quot;, true)">Clique aqui</a>
+        <a title="Para alterar a ordem de importância das produções" href="#" onclick="parent.modalCV1.setarUrl(&quot;pkg_artigo.lista_autores_ordem?f_base=1&amp;f_cod=KXXXXXXXX&quot;, true)">Clique aqui</a>
         <br>
         <div id="removeOrd" style="visibility: hidden;">
         Para remover a ordem de importância das produções
@@ -998,12 +998,12 @@ if(confirm("Atenção. Está operação irá apagar a ordenação definida pelo 
       url : "PKG_ARTIGO.restaura_ordem_importancia",
       type :"POST" ,
       data : {
-        cod_rh_cri : "K1237839P9"
+        cod_rh_cri : "KXXXXXXXX"
       },
       dataType : "text",
       success : function(resposta) {
         $.ajax({
-           url: "pkg_aviso_pendencia.inicio?f_cod=K1237839P9&v_modulo=IDENTIFICACAO&v_modulo=PUBLICACAO&v_modulo=DADOSPESSOAIS&v_modulo=ENDERECO&v_modulo=FORMACAO&v_modulo=ATUACAO&v_modulo=CITACOES&v_modulo=ARTIGO&v_modulo=LIVRO&v_modulo=CITACAO&v_t=" + new Date(),
+           url: "pkg_aviso_pendencia.inicio?f_cod=KXXXXXXXX&v_modulo=IDENTIFICACAO&v_modulo=PUBLICACAO&v_modulo=DADOSPESSOAIS&v_modulo=ENDERECO&v_modulo=FORMACAO&v_modulo=ATUACAO&v_modulo=CITACOES&v_modulo=ARTIGO&v_modulo=LIVRO&v_modulo=CITACAO&v_t=" + new Date(),
           dataType : "html",
           async : false,
           success : function(resposta) {
@@ -1015,7 +1015,7 @@ if(confirm("Atenção. Está operação irá apagar a ordenação definida pelo 
           conteudo : 'A operação foi realizada com sucesso!',
           classe : 'ok'
         });
-        parent.modalCV1.setarUrl("pkg_artigo.lista?f_cod=K1237839P9&F_STA_DIVULGACAO_CIENTIFICA=", true);
+        parent.modalCV1.setarUrl("pkg_artigo.lista?f_cod=KXXXXXXXX&F_STA_DIVULGACAO_CIENTIFICA=", true);
       }
        });
 }       

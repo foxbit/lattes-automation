@@ -16,9 +16,9 @@
       "newButtonText": "Incluir novo item"
     },
     "screenshots": [
-      "/home/angelorosa/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120394043_mod_formacao_academica_lista.png",
-      "/home/angelorosa/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120403297_mod_formacao_academica_form.png",
-      "/home/angelorosa/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120438453_mod_formacao_academica_final.png"
+      "~/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120394043_mod_formacao_academica_lista.png",
+      "~/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120403297_mod_formacao_academica_form.png",
+      "~/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120438453_mod_formacao_academica_final.png"
     ],
     "errors": [],
     "formView": {
@@ -45,9 +45,9 @@
       "newButtonText": "Incluir novo item"
     },
     "screenshots": [
-      "/home/angelorosa/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120474752_mod_atuacao_profissional_lista.png",
-      "/home/angelorosa/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120570974_mod_atuacao_profissional_form.png",
-      "/home/angelorosa/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120606116_mod_atuacao_profissional_final.png"
+      "~/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120474752_mod_atuacao_profissional_lista.png",
+      "~/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120570974_mod_atuacao_profissional_form.png",
+      "~/Documentos/0 - Projetos-GIT/lattes-automation/data/snapshots/1786120606116_mod_atuacao_profissional_final.png"
     ],
     "errors": [
       "Erro ao clicar Incluir: Botão \"Incluir\" não encontrado"

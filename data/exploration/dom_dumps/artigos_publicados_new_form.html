@@ -1433,7 +1433,7 @@ var vcontent = "Nenhuma das opções de formato do seu nome, " +
 "Currículo, consta da lista de autores desse artigo. " +
 "Verifique a forma como seu nome foi citado no artigo " +
 "e, se for o caso, atualize o campo Nome em citações bibliográficas " +
-"(<a onclick=\"self.parent.modalCV1.setarUrl('prc_ident?f_cod=K1237839P9&f_pcd=X',true)\" href=\"javascript:void(0)\">clique aqui para atualizar</a>). " +
+"(<a onclick=\"self.parent.modalCV1.setarUrl('prc_ident?f_cod=KXXXXXXXX&f_pcd=X',true)\" href=\"javascript:void(0)\">clique aqui para atualizar</a>). " +
 "Segue abaixo a lista dos nomes recuperados pelo DOI informado:";
 
 vcontent +=  autLista;
@@ -1611,7 +1611,7 @@ function SeleTitulo(id_prod) {
   winSeleTitulo = $.win({
     visible:false,
     width:650,
-     url:"pkg_artigo.sele_titulo?p_id=" + id_prod + "&p_cod=K1237839P9",
+     url:"pkg_artigo.sele_titulo?p_id=" + id_prod + "&p_cod=KXXXXXXXX",
      buttons: [{label:"Confirmar", callback:handleSeleTitulo},
                {label:"Cancelar", callback:handleSeleTituloCancela}]
   });
@@ -1728,14 +1728,14 @@ return str.replace("+","%2B")
 
 
 function call_ivip_metadata(pissn,pvolume,pedicao,ppag_inicial){
-    url="PKG_ARTIGO.form_metadata_ajax_ivip?f_periodico="+ escape("") + "&f_seq=&f_tpo=11&f_codr=K1237839P9&f_issn=" + "" + "&f_volume=" + "" + "&f_edicao=" + "" + "&f_pag_ini=" + "" ;
+    url="PKG_ARTIGO.form_metadata_ajax_ivip?f_periodico="+ escape("") + "&f_seq=&f_tpo=11&f_codr=KXXXXXXXX&f_issn=" + "" + "&f_volume=" + "" + "&f_edicao=" + "" + "&f_pag_ini=" + "" ;
     chamaUrl(url);
     return;
 }
 
 function call_doi_metadata(vcodoi){
     vcodoi=jencode(vcodoi);
-    url="PKG_ARTIGO.form_metadata_ajax?f_seq=&f_tpo=11&f_codr=K1237839P9&f_cod=" + vcodoi ;
+    url="PKG_ARTIGO.form_metadata_ajax?f_seq=&f_tpo=11&f_codr=KXXXXXXXX&f_cod=" + vcodoi ;
     exibirLoading2()
     chamaUrl(url);
     return;
@@ -1764,7 +1764,7 @@ return v_ret;
 
 function call_doi(){
   var vres;
-  var vcod = "K1237839P9";
+  var vcod = "KXXXXXXXX";
   var vseq = "";
   vlr=trim(dc.f_cod_doi.value);
   if (vlr=="") {
@@ -1879,8 +1879,8 @@ rlv=0;
 var j2;
 function periodico(){
 if(permiteSelecPeriod){
-//  url="prc_periodico?f_cod=K1237839P9&f_nome=" + escape(trim(dc.f_titulo_periodico.value));
-  url="prc_periodico_jcr?f_cod=K1237839P9";
+//  url="prc_periodico?f_cod=KXXXXXXXX&f_nome=" + escape(trim(dc.f_titulo_periodico.value));
+  url="prc_periodico_jcr?f_cod=KXXXXXXXX";
 /*
   fecha();
   janela=window.open(url, "Jinst","status=no,scrollbars=yes,width=500,height=450,left=550,top=70")
@@ -2038,7 +2038,7 @@ if(!doiInvalido && trim(dc.f_cod_doi.value)!= ""){
       msg[cte] = "O DOI informado não é de artigo, é um DOI de " + vtipoDoi.toLowerCase();
       obj[cte++] = "dc.f_cod_doi";
   } else {
-    var vres = vefificaDoiCadastrado(trim(dc.f_cod_doi.value),"K1237839P9","")
+    var vres = vefificaDoiCadastrado(trim(dc.f_cod_doi.value),"KXXXXXXXX","")
     eval(vres)
 /*    if(vres.indexOf("doiDup = 1") > -1){
     alert("O DOI já está cadastrado para outra produção.")
@@ -2592,7 +2592,7 @@ function setConteudo(id,conteudo) {
 
 function callVeriDoiDup(vdoiNovo){
 
-         var url = "pkg_artigo.verifica_doi_duplicado?f_seq=&f_cod=K1237839P9&f_doi=" + vdoiNovo;
+         var url = "pkg_artigo.verifica_doi_duplicado?f_seq=&f_cod=KXXXXXXXX&f_doi=" + vdoiNovo;
          callUrl(url)
 }
 
@@ -2610,7 +2610,7 @@ $("#tabelaAutor").find("input").unbind().attr("readonly","readonly");
 function call_title_check(vtitchk){
   if(vtitchk != "" ){
          validandoTitulo = "INICIOU"
-         var url = "pkg_titulo_similar.verifica_titulo?f_seq=&f_cod=K1237839P9&f_tit=" + escape(vtitchk) + "&f_cond=IN(*111*,*1D1*)";
+         var url = "pkg_titulo_similar.verifica_titulo?f_seq=&f_cod=KXXXXXXXX&f_tit=" + escape(vtitchk) + "&f_cond=IN(*111*,*1D1*)";
            callUrl(url);
   }
 }
@@ -3886,11 +3886,11 @@ var edit = {
       incluirClick:function() {
         titularInstGlobalData = data;
         titularCadInstWin.show();
-        titularCadInstWin.request('pkg_titular_inst.sele_inst?f_ctr=O&f_cod=K1237839P9');
+        titularCadInstWin.request('pkg_titular_inst.sele_inst?f_ctr=O&f_cod=KXXXXXXXX');
       },
       todosClick:function() {
         titularInstTodosWin.show();
-        titularInstTodosWin.request('pkg_titular_inst.sele_inst?f_cod=K1237839P9');
+        titularInstTodosWin.request('pkg_titular_inst.sele_inst?f_cod=KXXXXXXXX');
 
       },
       inputFocus:function() {
@@ -5679,7 +5679,7 @@ Outras informações
                </span>
 
 <input type="hidden" name="f_ctr" value="I">
-<input type="hidden" name="f_cod" value="K1237839P9">
+<input type="hidden" name="f_cod" value="KXXXXXXXX">
 <input type="hidden" name="f_seq" value="">
 <input type="hidden" name="f_autores_l" value="">
 <input type="hidden" name="f_autores_l2" value="">

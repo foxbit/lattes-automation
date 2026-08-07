@@ -13,15 +13,15 @@
         {
           "index": 0,
           "text": "1\n   \n2012... 2016\nGraduação\nFaculdade Estácio de São Luis",
-          "details": "onclick: self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo"
+          "details": "onclick: self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=KXXXXXXXX&f_seq=1&f_tipo"
         }
       ],
       "newButtonOnclick": "selecionarNivel();",
-      "editRowOnclick": "self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo=FA',true);"
+      "editRowOnclick": "self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=KXXXXXXXX&f_seq=1&f_tipo=FA',true);"
     },
     "errors": [],
     "newForm": {
-      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=K1237839P9&f_tipo=FA&f_nivel=4",
+      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=KXXXXXXXX&f_tipo=FA&f_nivel=4",
       "fields": [
         {
           "label": "Instituição",
@@ -241,7 +241,7 @@
       ]
     },
     "editForm": {
-      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo=FA",
+      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=KXXXXXXXX&f_seq=1&f_tipo=FA",
       "fields": [
         {
           "label": "Instituição",
