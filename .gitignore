@@ -1,0 +1,12 @@
+node_modules/
+dist/
+data/auth/
+data/snapshots/
+data/logs/
+*.session.json
+.env
+
+# Artefatos sensiveis
+Lattes/
+artefatos-manus/
+

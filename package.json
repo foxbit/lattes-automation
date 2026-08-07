@@ -1,0 +1,28 @@
+{
+  "name": "lattes-automation",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/cli.js",
+  "scripts": {
+    "login": "tsx src/cli.ts login",
+    "explore": "tsx src/cli.ts explore",
+    "read": "tsx src/cli.ts read",
+    "mcp": "tsx src/mcp/server.ts",
+    "build": "tsc",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": ["lattes", "cnpq", "automation", "mcp", "playwright"],
+  "author": "Angelo Rosa",
+  "license": "MIT",
+  "description": "Automação agêntica do Currículo Lattes via Playwright + MCP Server",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@playwright/test": "^1.62.1",
+    "playwright": "^1.62.1",
+    "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "tsx": "^4.23.11"
+  }
+}
