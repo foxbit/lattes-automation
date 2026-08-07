@@ -102,7 +102,8 @@ export class LattesNavigator {
    * Takes a screenshot and saves it to the snapshots directory
    */
   async takeSnapshot(label: string): Promise<string> {
-    const filename = `${Date.now()}_${label.replace(/\s+/g, '_')}.png`;
+    const safeLabel = label.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const filename = `${Date.now()}_${safeLabel}.png`;
     const filepath = join(SNAPSHOTS_DIR, filename);
     await this.page.screenshot({ path: filepath, fullPage: false });
     this.log('snapshot', { label, filepath });
