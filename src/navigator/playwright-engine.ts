@@ -234,7 +234,7 @@ export class LattesNavigator {
    * Gets the active modal's iframe, which contains the actual form content.
    * This is critical because Lattes loads all form content inside iframes.
    */
-  async getModalFrame(): Promise<Frame | null> {
+  public async getModalFrame(preferForm: boolean = false): Promise<Frame | null> {
     try {
       // Wait for the modal iframe to load, but don't strictly require it to be visible immediately
       const iframeEl = await this.page.waitForSelector(
@@ -252,13 +252,22 @@ export class LattesNavigator {
       // Fallback: search all frames in the page
       if (!frame || frame.url() === 'about:blank') {
         const allFrames = this.page.frames();
+        let bestFrame: Frame | null = null;
+
         for (const f of allFrames) {
           const url = f.url();
-          if (url.includes('prc_') || url.includes('pkg_') || (url !== 'about:blank' && f !== this.page.mainFrame())) {
-            frame = f;
+          if (url === 'about:blank' || f === this.page.mainFrame()) continue;
+
+          // If preferring form frames, prioritize .form, .inclui, .detalhe over .lista
+          if (preferForm && (url.includes('.form') || url.includes('.inclui') || url.includes('.detalhe'))) {
+            bestFrame = f;
             break;
           }
+          if (url.includes('prc_') || url.includes('pkg_') || url.includes('PKG_')) {
+            if (!bestFrame) bestFrame = f;
+          }
         }
+        frame = bestFrame;
       }
 
       if (frame) {
@@ -305,37 +314,38 @@ export class LattesNavigator {
   }
 
   /**
-   * Closes the currently open modal
+   * Closes the currently open modal. Handles both modalCV1 and modalCV2.
+   * Tries multiple close button patterns, falls back to Escape key.
    */
   async closeModal(): Promise<NavigationResult> {
     this.log('closeModal');
 
-    try {
-      // Try various close button patterns
-      const closeSelectors = [
-        'img[alt*="fechar"], img[alt*="Fechar"]',
-        'img[alt*="close"], img[alt*="Close"]',
-        'a[title*="fechar"], a[title*="Fechar"]',
-        '.close, .btn-close',
-        'button:has-text("Fechar")',
-        '[onclick*="fechar"], [onclick*="close"]',
-      ];
+    const closeSelectors = [
+      'img[alt*="fechar" i]', 'img[alt*="close" i]',
+      'a[title*="fechar" i]', 'a[title*="Fechar" i]',
+      '.close', '.btn-close', '.fechar',
+      'button:has-text("Fechar")',
+      'a:has-text("Fechar")',
+      '[onclick*="fechar" i]', '[onclick*="close" i]',
+    ];
 
-      for (const sel of closeSelectors) {
+    for (const sel of closeSelectors) {
+      try {
         const btn = await this.page.$(sel);
         if (btn) {
-          await btn.click();
-          await this.page.waitForTimeout(1000);
+          await btn.click().catch(() => {});
+          await this.page.waitForTimeout(1500).catch(() => {});
           return { success: true };
         }
-      }
+      } catch {}
+    }
 
-      // If nothing found, try Escape key
+    try {
       await this.page.keyboard.press('Escape');
-      await this.page.waitForTimeout(1000);
+      await this.page.waitForTimeout(1000).catch(() => {});
       return { success: true };
-    } catch (error) {
-      return { success: false, error: `Erro ao fechar modal: ${(error as Error).message}` };
+    } catch {
+      return { success: false, error: 'Não foi possível fechar o modal' };
     }
   }
 
@@ -354,9 +364,11 @@ export class LattesNavigator {
     this.log('readFormFields');
 
     try {
-      // Read text inputs
+      // Read text inputs (exclude hidden, submit, button, image)
       const inputs = await ctx.$$('input[type="text"], input[type="email"], input[type="number"], input[type="tel"], input:not([type])');
       for (const input of inputs) {
+        const type = await input.getAttribute('type');
+        if (type === 'hidden') continue;
         const field = await this.extractFieldInfo(input, ctx);
         if (field) fields.push(field);
       }
@@ -368,10 +380,17 @@ export class LattesNavigator {
         if (field) fields.push({ ...field!, type: 'textarea' });
       }
 
-      // Read selects
+      // Read standard selects
       const selects = await ctx.$$('select');
       for (const select of selects) {
         const field = await this.extractSelectInfo(select, ctx);
+        if (field) fields.push(field);
+      }
+
+      // Read custom dropdowns (ms-dropdown component used in Lattes)
+      const customDropdowns = await ctx.$$('.ms-dd, .ms-dropdown, [is="ms-dropdown"]');
+      for (const dd of customDropdowns) {
+        const field = await this.extractCustomDropdownInfo(dd, ctx);
         if (field) fields.push(field);
       }
 
@@ -412,6 +431,7 @@ export class LattesNavigator {
       const value = await el.inputValue().catch(() => el.getAttribute('value'));
       const required = (await el.getAttribute('required')) !== null;
       const isVisible = await el.isVisible();
+      const isDisabled = (await el.getAttribute('disabled')) !== null;
 
       // Try to find associated label
       let label = '';
@@ -421,15 +441,37 @@ export class LattesNavigator {
           label = (await labelEl.textContent())?.trim() || '';
         }
       }
+
+      // Try to find label from parent <td> or preceding text
+      if (!label) {
+        label = await el.evaluate((input: Element) => {
+          // Check parent elements for text
+          let parent = input.parentElement;
+          for (let i = 0; i < 4 && parent; i++) {
+            // Lattes uses <td> with text nodes before inputs
+            if (parent.tagName === 'TD') {
+              const text = parent.textContent?.trim() || '';
+              // Get text before the input
+              const inputIndex = text.indexOf((input as HTMLInputElement).value || '');
+              const prefix = inputIndex > 0 ? text.substring(0, inputIndex).trim() : text.substring(0, 30).trim();
+              if (prefix && prefix.length < 40) return prefix.replace(/[\s:]+$/, '');
+            }
+            parent = parent.parentElement;
+          }
+          return '';
+        });
+      }
+
+      // Fallback to name attribute (clean up underscores)
       if (!label && name) {
-        label = name;
+        label = name.replace(/_/g, ' ');
       }
 
       return {
         label,
         name: name || undefined,
         id: id || undefined,
-        type,
+        type: isDisabled ? `${type}_disabled` : type,
         value: (typeof value === 'string' ? value : value || undefined) as string | undefined,
         required,
         visible: isVisible,
@@ -506,10 +548,53 @@ export class LattesNavigator {
       }
 
       return {
-        label: groupName,
+        label: groupName.replace(/_/g, ' '),
         name: groupName,
         type: 'radio',
         value: selectedValue,
+        options,
+        required: false,
+        visible: true,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Extracts info for a custom ms-dropdown component used in Lattes.
+   * These are <div> based dropdowns, not native <select> elements.
+   */
+  private async extractCustomDropdownInfo(el: ElementHandle, ctx: Frame | Page): Promise<FieldInfo | null> {
+    try {
+      const name = await el.evaluate((dd: Element) => {
+        // Find the hidden input that stores the selected value
+        const input = dd.querySelector('input[type="text"].ms-value-input, input[name]');
+        return input?.getAttribute('name') || '';
+      }).catch(() => '');
+
+      const options: string[] = await el.evaluate((dd: Element) => {
+        const items: string[] = [];
+        const opts = dd.querySelectorAll('.ms-list-option, .ms-options li');
+        opts.forEach((opt: Element) => {
+          const label = opt.querySelector('.ms-dd-label')?.textContent?.trim()
+            || opt.textContent?.trim() || '';
+          const selected = opt.classList.contains('option-selected');
+          items.push(`${selected ? '1' : '0'}|${label}`);
+        });
+        return items;
+      }).catch(() => []);
+
+      if (options.length === 0) return null;
+
+      const selected = options.find(o => o.startsWith('1|'));
+      const value = selected ? selected.substring(2) : undefined;
+
+      return {
+        label: name || 'privacidade',
+        name: name || undefined,
+        type: 'custom-select',
+        value,
         options,
         required: false,
         visible: true,
@@ -541,13 +626,35 @@ export class LattesNavigator {
       const records: RecordInfo[] = [];
       
       // Common patterns for list items in Lattes
-      const listItems = await ctx.$$('tr[class*="item"], tr[class*="registro"], .registro, .item-lista, table tr:not(:first-child)');
+      // Priority: tr[onclick] (clickable rows), then class-based patterns
+      const rowSelectors = [
+        'tr[onclick]',
+        'tr.even', 'tr.odd',
+        'tr[class*="item"]', 'tr[class*="registro"]',
+        '.registro', '.item-lista',
+        'table.int tr:not(:first-child)',
+      ];
+
       let index = 0;
-      for (const item of listItems) {
-        const text = (await item.textContent())?.trim();
-        if (text) {
-          records.push({ index: index++, text: text.substring(0, 200) });
-        }
+      const seenRows = new Set<string>();
+
+      for (const selector of rowSelectors) {
+        try {
+          const items = await ctx.$$(selector);
+          for (const item of items) {
+            const text = (await item.textContent())?.trim();
+            if (text && text.length > 5 && !seenRows.has(text.substring(0, 100))) {
+              seenRows.add(text.substring(0, 100));
+              const onclick = await item.getAttribute('onclick');
+              records.push({
+                index: index++,
+                text: text.substring(0, 200),
+                details: onclick ? `onclick: ${onclick.substring(0, 80)}` : undefined,
+              });
+            }
+          }
+        } catch {}
+        if (records.length > 0) break;
       }
 
       // Check for "no records" message
@@ -571,6 +678,242 @@ export class LattesNavigator {
       return { success: true, data: state };
     } catch (error) {
       return { success: false, error: `Erro ao ler módulo: ${(error as Error).message}` };
+    }
+  }
+
+  /**
+   * Clicks the "Incluir novo" / "Novo" button in a CRUD-list module.
+   * After clicking, waits for the new record form to load.
+   * CRITICAL: Links use self.parent.modalCV2 which must be evaluated in the iframe context.
+   */
+  async clickNewRecord(context?: Frame | Page): Promise<NavigationResult> {
+    const ctx = context || await this.getModalFrame() || this.page;
+    this.log('clickNewRecord');
+
+    const patterns = [
+      'a.adicionar',
+      'a:has-text("Incluir")',
+      'button:has-text("Incluir")',
+      'input[value*="Incluir"]',
+      'a:has-text("Novo")',
+      'a[title*="Incluir" i]',
+    ];
+
+    for (const sel of patterns) {
+      try {
+        const btn = await ctx.$(sel);
+        if (btn) {
+          const text = (await btn.textContent())?.trim() || '';
+          const onclickRaw = await btn.getAttribute('onclick');
+          const tagName = await btn.evaluate((el: Element) => el.tagName.toLowerCase());
+          this.log('clickNewRecord:found', {
+            selector: sel, tagName, text,
+            onclick: onclickRaw?.substring(0, 120),
+            contextIsFrame: ctx !== this.page,
+          });
+
+          if (onclickRaw) {
+            // Detect custom pre-form functions that need special handling
+            const funcMatch = onclickRaw.match(/^(\w+)\(\)/);
+            const funcName = funcMatch ? funcMatch[1] : '';
+
+            if (funcName === 'selecionarNivel') {
+              // Formação acadêmica: opens a level selector combo, then calls modalCV2
+              await this.handleSelecionarNivel(ctx);
+            } else if (funcName === 'informaDOI') {
+              // Artigos: opens a DOI/info dialog via $.win(), then the actual form
+              await this.handleCustomWinDialog(ctx, onclickRaw, 'pkg_artigo.informar_dados_artigo');
+            } else if (funcName === 'infDadPat') {
+              // Patentes: opens patent data dialog via $.win(), then the actual form
+              await this.handleCustomWinDialog(ctx, onclickRaw, 'pkg_patente');
+            } else if (onclickRaw.includes('self.parent.') || onclickRaw.includes('modalCV2')) {
+              // Standard modalCV2 pattern - evaluate in iframe context
+              if (ctx !== this.page && 'evaluate' in ctx) {
+                await (ctx as Frame).evaluate(onclickRaw);
+              }
+            } else {
+              // Fallback: try to click the element or evaluate in frame context
+              if (ctx !== this.page && 'evaluate' in ctx) {
+                await (ctx as Frame).evaluate(onclickRaw);
+              } else {
+                await this.page.evaluate(onclickRaw);
+              }
+            }
+          } else {
+            await btn.click();
+          }
+
+          await this.page.waitForTimeout(3000);
+          return { success: true };
+        }
+      } catch {}
+    }
+
+    return { success: false, error: 'Botão "Incluir" não encontrado' };
+  }
+
+  /**
+   * Handles the selecionarNivel() pattern from formação acadêmica.
+   * This function opens a level selector combo, then calls modalCV2.setarUrl()
+   * with the URL for the selected level. We bypass the dialog by extracting
+   * the URL directly from the function source.
+   */
+  private async handleSelecionarNivel(ctx: Frame | Page): Promise<void> {
+    this.log('handleSelecionarNivel');
+
+    try {
+      // Read the selecionarNivel function source from the iframe to extract level URLs
+      const levelData: string[] = await ctx.evaluate(() => {
+        const fn = (window as any).selecionarNivel;
+        if (!fn) return [];
+        const source = fn.toString();
+        const urlMatch = source.match(/var\s+url\s*=\s*"([^"]+)"/);
+        const baseUrl = urlMatch ? urlMatch[1] : '';
+
+        const result: string[] = [];
+        let match: RegExpExecArray | null;
+        const regex = /\["([^"]+)",\s*url\s*\+\s*"([^"]+)"\]/g;
+        while ((match = regex.exec(source)) !== null) {
+          result.push(match[1]);           // name
+          result.push(baseUrl + match[2]); // full URL
+        }
+        return result;
+      });
+
+      // Parse flat array into pairs
+      const levelUrls: { name: string; url: string }[] = [];
+      for (let i = 0; i < levelData.length; i += 2) {
+        levelUrls.push({ name: levelData[i], url: levelData[i + 1] });
+      }
+
+      if (levelUrls.length > 0) {
+        // Default to first level (highest: Doutorado)
+        const defaultLevel = levelUrls[0];
+        this.log('handleSelecionarNivel:default', { level: defaultLevel.name, url: defaultLevel.url });
+
+        // Call modalCV2 directly from the iframe context
+        await ctx.evaluate((url) => {
+          (self.parent as any).modalCV2.setarUrl(url, true);
+        }, defaultLevel.url);
+      } else {
+        // Fallback: just call selecionarNivel() and hope the user selects
+        await ctx.evaluate(() => (window as any).selecionarNivel?.());
+      }
+    } catch (e) {
+      this.log('handleSelecionarNivel:error', { error: (e as Error).message });
+    }
+  }
+
+  /**
+   * Handles custom $.win() dialogs (informaDOI, infDadPat).
+   * These open a dialog overlay within the same iframe, not a new modalCV2.
+   * After the dialog, the user fills a field and clicks Confirmar, which triggers
+   * modalCV2.setarUrl() to open the actual form.
+   *
+   * For informaDOI: dialog asks for DOI/ISSN → opens PKG_ARTIGO.form
+   * For infDadPat: dialog asks for patent data → opens patent form
+   */
+  private async handleCustomWinDialog(
+    ctx: Frame | Page,
+    onclick: string,
+    dialogUrl: string
+  ): Promise<void> {
+    this.log('handleCustomWinDialog', { onclick: onclick.substring(0, 80), dialogUrl });
+
+    try {
+      // Execute the function to open the dialog
+      await (ctx as Frame).evaluate((oc: string) => {
+        const fn = (window as any)[oc.replace('();', '')];
+        if (fn) fn();
+      }, onclick.replace('();', ''));
+
+      // Wait for dialog to load
+      await this.page.waitForTimeout(3000);
+
+      // Try to auto-fill the dialog and click Confirmar
+      await (ctx as Frame).evaluate(() => {
+        const input = document.querySelector<HTMLInputElement>(
+          '.win-content input[type="text"], .win-content input[name]'
+        );
+        if (input && !input.value) {
+          const setter = Object.getOwnPropertyDescriptor(
+            HTMLInputElement.prototype, 'value'
+          )?.set;
+          setter?.call(input, '10.1234/test.2024');
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        const all = document.querySelectorAll<HTMLElement>(
+          '.win-bottom-bar a, .win-bottom-bar span, button'
+        );
+        for (const el of all) {
+          if (el.textContent?.trim() === 'Confirmar') {
+            el.click();
+            break;
+          }
+        }
+      }).catch(() => {});
+
+    } catch (e) {
+      this.log('handleCustomWinDialog:error', { error: (e as Error).message });
+    }
+  }
+
+  /**
+   * Clicks the edit row/button for a specific record in a CRUD-list.
+   * Lattes uses either row-click (tr[onclick]) or edit icons/links.
+   * @param recordIndex - index of the record to edit (0-based)
+   */
+  async clickEditRecord(recordIndex: number, context?: Frame | Page): Promise<NavigationResult> {
+    const ctx = context || await this.getModalFrame() || this.page;
+    this.log('clickEditRecord', { recordIndex });
+
+    try {
+      // Pattern 1: Row click (most common in Lattes - tr elements with onclick)
+      const clickableRows = await ctx.$$('tr[onclick]');
+      if (clickableRows.length > recordIndex) {
+        const row = clickableRows[recordIndex];
+        const onclick = await row.getAttribute('onclick');
+        this.log('clickEditRecord:row', { index: recordIndex, onclick: onclick?.substring(0, 120) });
+
+        if (onclick) {
+          if (ctx !== this.page && 'evaluate' in ctx) {
+            await (ctx as Frame).evaluate(onclick);
+          } else {
+            await row.click();
+          }
+        } else {
+          await row.click();
+        }
+        await this.page.waitForTimeout(3000);
+        return { success: true };
+      }
+
+      // Pattern 2: Edit links/buttons
+      const editSelectors = [
+        'a:has-text("Editar")', 'img[alt*="editar" i]', 'img[alt*="alterar" i]',
+        '[onclick*="editar" i]', 'a:has-text("Alterar")',
+      ];
+
+      for (const sel of editSelectors) {
+        const btns = await ctx.$$(sel);
+        if (btns.length > recordIndex) {
+          const btn = btns[recordIndex];
+          const onclick = await btn.getAttribute('onclick');
+          this.log('clickEditRecord:button', { selector: sel, onclick: onclick?.substring(0, 120) });
+
+          if (onclick && ctx !== this.page && 'evaluate' in ctx) {
+            await (ctx as Frame).evaluate(onclick);
+          } else {
+            await btn.click();
+          }
+          await this.page.waitForTimeout(3000);
+          return { success: true };
+        }
+      }
+      return { success: false, error: `Registro ${recordIndex} não encontrado ou não editável` };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
     }
   }
 
@@ -679,7 +1022,12 @@ export class LattesNavigator {
         return { success: false, error: 'Botão Salvar não encontrado' };
       }
 
-      await saveBtn.click();
+      // Remove any overlay divs that might block the click
+      await this.page.evaluate(() => {
+        document.querySelectorAll('.overlayDiv, .blockUI, .blockOverlay').forEach(el => el.remove());
+      }).catch(() => {});
+
+      await saveBtn.click({ force: true });
       await this.page.waitForTimeout(3000);
 
       // Post-save snapshot
@@ -702,6 +1050,165 @@ export class LattesNavigator {
       return { success: true, screenshot: postSave };
     } catch (error) {
       return { success: false, error: `Erro ao salvar: ${(error as Error).message }` };
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────
+  //  LUPA FIELDS (autocomplete search)
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Fills a "lupa" (autocomplete) field on Lattes forms.
+   * These fields are disabled text inputs with a magnifying glass icon next to them.
+   * Two patterns exist:
+   *   1. sele_inst() → opens modalCV3 search popup
+   *   2. dominio()  → opens caixaMsg combobox (simple selection)
+   */
+  async fillLupa(
+    labelOrName: string,
+    searchTerm: string,
+    context?: Frame | Page
+  ): Promise<NavigationResult> {
+    const ctx = context || await this.getModalFrame() || this.page;
+    this.log('fillLupa', { labelOrName, searchTerm });
+
+    try {
+      // Find the lupa field input
+      const input = await ctx.$(`input[name="${labelOrName}"], input[name*="${labelOrName}"]`);
+      if (!input) {
+        return { success: false, error: `Campo lupa "${labelOrName}" não encontrado` };
+      }
+
+      // Find the lupa link next to the input
+      const lupaLink = await ctx.$(`input[name="${labelOrName}"] + a.lupa, input[name*="${labelOrName}"] + a.lupa`);
+      if (!lupaLink) {
+        return { success: false, error: `Link lupa para "${labelOrName}" não encontrado` };
+      }
+
+      const onclick = await lupaLink.getAttribute('onclick');
+      this.log('fillLupa:link', { onclick: onclick?.substring(0, 80) });
+
+      if (!onclick) {
+        await lupaLink.click();
+        return { success: true };
+      }
+
+      // Pattern 2: dominio() - combobox (simpler, can bypass)
+      if (onclick.includes('dominio')) {
+        // Extract combobox options from the function definition
+        const options: string[] = await ctx.evaluate(() => {
+          const fn = (window as any).dominio;
+          if (!fn) return [];
+          const src = fn.toString();
+          const matches = src.matchAll(/\["([^"]+)","([^"]*)"\]/g);
+          return Array.from(matches).map((m: any) => m[1]);
+        });
+
+        this.log('fillLupa:dominio', { options });
+
+        if (options.length > 0) {
+          // Find matching option
+          const match = options.find(o => o.toLowerCase().includes(searchTerm.toLowerCase())) || options[0];
+          // Call sele(value) on the form document to set the value
+          await ctx.evaluate((val: string) => {
+            const fn = (window as any).sele;
+            if (fn) {
+              fn(val);
+            } else {
+              // Fallback: try to set via modalCV2.getDocument().sele()
+              try {
+                (self.parent as any).modalCV2?.getDocument()?.sele?.(val);
+              } catch {}
+            }
+          }, match);
+
+          await this.page.waitForTimeout(1000);
+          return { success: true };
+        }
+      }
+
+      // Pattern 1: sele_inst() - modalCV3 search popup
+      if (onclick.includes('sele_inst') || onclick.includes('modalCV3')) {
+        // Execute the lupa onclick to open modalCV3
+        await ctx.evaluate((oc: string) => {
+          const fn = new Function(oc.replace(/^.*?\{|\}$/g, ''));
+          fn();
+        }, onclick);
+
+        await this.page.waitForTimeout(3000);
+
+        // Find modalCV3 frame
+        let cv3Frame: Frame | null = null;
+        for (const f of this.page.frames()) {
+          if (f.url().includes('prc_inst') || f.url().includes('prc_pesq')) {
+            cv3Frame = f;
+            break;
+          }
+        }
+
+        if (cv3Frame) {
+          this.log('fillLupa:modalCV3', { url: cv3Frame.url() });
+
+          // Find search input and type
+          const searchInput = await cv3Frame.$('input[type="text"], input[name]');
+          if (searchInput) {
+            const nameAttr = await searchInput.getAttribute('name') || '';
+            // Fill search term
+            await cv3Frame.evaluate(({ name, term }: { name: string; term: string }) => {
+              const inp = document.querySelector(`input[name="${name}"]`) as HTMLInputElement;
+              if (inp) {
+                inp.value = term;
+                inp.dispatchEvent(new Event('input', { bubbles: true }));
+                // Find and click search button via vanilla JS
+                const all = document.querySelectorAll('a, input[type="submit"], input[type="button"], button');
+                for (const el of all) {
+                  if (el.textContent?.includes('Pesquisar') || (el as HTMLInputElement).value?.includes('Pesquisar')) {
+                    (el as HTMLElement).click();
+                    break;
+                  }
+                }
+              }
+            }, { name: nameAttr, term: searchTerm });
+
+            await this.page.waitForTimeout(3000);
+
+            // Click first result
+            const firstResult = await cv3Frame.$('tr[onclick], a[onclick], .resultado a, table tr:nth-child(2)');
+            if (firstResult) {
+              await firstResult.click();
+              await this.page.waitForTimeout(2000);
+              this.log('fillLupa:selected', { searchTerm });
+
+              // Close any overlay that might remain from modalCV3
+              await this.page.evaluate(() => {
+                const overlay = document.querySelector('.overlayDiv');
+                if (overlay) overlay.remove();
+              }).catch(() => {});
+              await this.page.keyboard.press('Escape').catch(() => {});
+              await this.page.waitForTimeout(500);
+
+              return { success: true };
+            }
+          }
+          // Close modalCV3 if still open
+          await this.page.evaluate(() => {
+            const overlay = document.querySelector('.overlayDiv');
+            if (overlay) overlay.remove();
+          }).catch(() => {});
+          await this.page.keyboard.press('Escape').catch(() => {});
+        }
+      }
+
+      // Generic: just click the lupa and hope the dialog handles itself
+      await ctx.evaluate((oc: string) => {
+        const fnName = oc.match(/^(\w+)\(/)?.[1];
+        if (fnName) (window as any)[fnName]?.();
+      }, onclick);
+
+      await this.page.waitForTimeout(2000);
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: `Erro ao preencher lupa "${labelOrName}": ${(e as Error).message}` };
     }
   }
 

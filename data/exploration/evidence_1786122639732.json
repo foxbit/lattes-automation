@@ -1,0 +1,29 @@
+{
+  "artigos_publicados": {
+    "module": {
+      "id": "artigos_publicados",
+      "name": "Artigos completos publicados em periódicos",
+      "category": "Produções",
+      "type": "crud-list",
+      "route": "pkg_artigo.lista"
+    },
+    "list": {
+      "recordCount": 0,
+      "records": [],
+      "newButtonOnclick": "informaDOI();"
+    },
+    "errors": [],
+    "newForm": {
+      "url": "dialog:Incluir novo artigo",
+      "fields": [
+        {
+          "label": "Incluir novo artigo div.row {padding:5px; text",
+          "name": "fparametro",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "sections": []
+    }
+  }
+}

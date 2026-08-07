@@ -9,7 +9,9 @@
     "read": "tsx src/cli.ts read",
     "mcp": "tsx src/mcp/server.ts",
     "build": "tsc",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "echo \"No tests yet\" && exit 0",
+    "explore-modules": "tsx src/explore-modules.ts",
+    "cadastro": "tsx src/test-cadastro.ts"
   },
   "keywords": ["lattes", "cnpq", "automation", "mcp", "playwright"],
   "author": "Angelo Rosa",

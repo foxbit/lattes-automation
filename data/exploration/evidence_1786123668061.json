@@ -1,0 +1,22 @@
+{
+  "atuacao_profissional": {
+    "module": {
+      "id": "atuacao_profissional",
+      "name": "Atuação profissional",
+      "category": "Atuação",
+      "type": "crud-list",
+      "route": "pkg_ativ.lista"
+    },
+    "list": {
+      "recordCount": 0,
+      "records": [],
+      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_ATIV.inclui?f_cod=K1237839P9',true);"
+    },
+    "errors": [],
+    "newForm": {
+      "url": "dialog:",
+      "fields": [],
+      "sections": []
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "atuacao_profissional": {
+    "module": {
+      "id": "atuacao_profissional",
+      "name": "Atuação profissional",
+      "category": "Atuação",
+      "type": "crud-list",
+      "route": "pkg_ativ.lista"
+    },
+    "listView": {
+      "recordCount": 0,
+      "records": [],
+      "hasNewButton": false,
+      "hasEditRows": false
+    },
+    "screenshots": [],
+    "domDumps": [],
+    "errors": [
+      "Fatal: page.waitForTimeout: Target page, context or browser has been closed"
+    ]
+  }
+}

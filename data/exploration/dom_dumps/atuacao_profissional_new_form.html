@@ -1,0 +1,1992 @@
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head>
+
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8">
+<meta http-equiv="Expires" content="Tue, 01 Dec 1990 06:30:00 GMT">
+<meta http-equiv="Cache-Control" content="no-cache,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="ROBOTS" content="NOARCHIVE">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+<title>Currículo Lattes</title>
+
+  <script type="text/javascript" src="/images/estatico/js/jquery-1.6.4.min.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/jquery.form.min.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/jquery.scrollTo.min.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/cv_gui.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/util.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/lista.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/navegacao.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/navegacao_new.js"></script>
+  <script type="text/javascript">
+
+  /* parametros
+
+  tabelaId: id da tabela que vai ter funcionalidade de grid
+  numMaxLinhas: número máximo de linhas a ser mostrado (para criação de barra de rolagem)
+  metodoEdicao: array que determina o método de edição de cada coluna
+      default = edicao livre
+      null = sem edicao
+      array de string = opcoes da combo box
+  unicoEdicao: caso o metodo seja um array, permite que o index x seja exclusivo
+  tagValor: array que determina qual elemento vai compor o array valores[] do grid
+    default = conteudo da coluna
+    null = nenhum valor atribuido
+    tag = atribui ao array o conteudo da tag escolhida dentro da coluna
+      ex: span
+  largura: array com a porcentagem de largura de cada coluna
+  alinhamento: array que determina o alinhamento de cada coluna (left,right,center,justify)
+  numMaxRegistros: indica o numero maximo de registros no array
+  exibirAdicionar: controla a visibilidade do botao adicionar
+  exibirControle: controla a visibilidade dos controles de remover/alterar
+  fnMovimento: funcao executada apos mover as linhas
+  fnAdicionar: função chamada pelo botao de adicionar na parte inferior do grid
+  manterPrimeiraLinha: impede que a primeira linha do modal seja excluida
+  esconderSetas: controla a visibilidade das setas de movimentação
+
+*/
+
+function criarGrid(parametros) {
+
+this.tabelaId = typeof parametros.tabelaId !="undefined" ? parametros.tabelaId : null;
+this.numMaxLinhas = typeof parametros.numMaxLinhas !="undefined" ? parametros.numMaxLinhas : null;
+this.metodoEdicao = typeof parametros.metodoEdicao !="undefined" ? parametros.metodoEdicao : null;
+this.unicoEdicao = typeof parametros.unicoEdicao !="undefined" ? parametros.unicoEdicao : null;
+this.tagValor = typeof parametros.tagValor !="undefined" ? parametros.tagValor : null;
+this.largura = typeof parametros.largura !="undefined" ? parametros.largura : null;
+this.alinhamento = typeof parametros.alinhamento !="undefined" ? parametros.alinhamento : null;
+this.numMaxRegistros = typeof parametros.numMaxRegistros !="undefined" ? parametros.numMaxRegistros : null;
+this.fnMovimento = typeof parametros.fnMovimento !="undefined" ? parametros.fnMovimento : null;
+this.fnAdicionar = typeof parametros.fnAdicionar !="undefined" ? parametros.fnAdicionar : null;
+this.exibirControle = typeof parametros.exibirControle !="undefined" ? parametros.exibirControle : true;
+this.exibirAdicionar = typeof parametros.exibirAdicionar !="undefined" ? parametros.exibirAdicionar : true;
+this.manterPrimeiraLinha = typeof parametros.manterPrimeiraLinha !="undefined" ? parametros.manterPrimeiraLinha : null;
+this.esconderSetas = typeof parametros.esconderSetas !="undefined" ? parametros.esconderSetas : null;
+
+this.tempInputs = new Array()
+this.tabela = document.getElementById(this.tabelaId)
+this.tabela.style.visibility = "hidden"
+this.tabela.className = "grid"
+this.scroller = document.getElementById('conteudoNavegacao') != null ? document.getElementById('conteudoNavegacao') : null;
+this.cabecalho = this.tabela.tHead
+this.numCol = this.cabecalho.rows[0].cells.length
+this.corpo = this.tabela.tBodies[0]
+this.tamMax = this.corpo.rows.length > 0 ? (this.numMaxLinhas * (this.corpo.rows[0].offsetHeight+6)) : this.numMaxLinhas * 25
+this.holder = this.tabela.parentNode
+this.alturaCabecalho = this.cabecalho.rows[0].offsetHeight
+this.opcoes = false
+this.protecao = false
+this.navegacaoScroller = document.getElementById("conteudoNavegacao");
+this.trSelecionada = null;
+
+  if (this.metodoEdicao == null) { this.bloquearEdicao = true }
+
+this.organizarEstrutura()
+this.executarTarefas()
+}
+
+criarGrid.prototype.verificarTamanho = function() {
+this.alturaLinhas = 0
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) { this.alturaLinhas += this.novoCorpo.rows[x].offsetHeight }
+
+  this.divHolder.style.height = this.alturaLinhas < this.tamMax ? this.alturaLinhas + "px" : this.tamMax + "px"
+}
+
+criarGrid.prototype.associarValores = function() {
+  if (!this.valores) this.valores = new Array()
+
+  if (this.valores.length > this.novoCorpo.rows.length) this.valores = new Array()
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    this.valores[x] = new Array()
+    for (var y=0; y<this.numCol; y++) {
+      if (this.tagValor[y] != "default") {
+      tag = this.novoCorpo.rows[x].cells[y].getElementsByTagName(this.tagValor[y])
+      tag.length > 0 ? conteudo = tag[0].innerHTML : conteudo = null
+      }
+      else { conteudo = this.novoCorpo.rows[x].cells[y].innerHTML }
+
+      if (this.tagValor[y] != "undefined" || this.tagValor[y] != null) { this.valores[x][y] = conteudo }
+    }
+  }
+
+}
+
+criarGrid.prototype.funcoesTr = function() {
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+  this.novoCorpo.rows[x].grid = this
+
+    // zebraRows
+    if (this.novoCorpo.rows[x].className != "selected") {
+    x%2 == 0 ? this.novoCorpo.rows[x].className = "par" : this.novoCorpo.rows[x].className = "impar"
+    }
+
+    // mouseover event
+     this.novoCorpo.rows[x].onmouseover = function() {
+    if (this.grid.timer) clearTimeout(this.grid.timer)
+    this.grid.mostrarOpcoes(this)
+    if (this.className !="selected") { this.className += " hover" }
+    }
+
+    // mouseout event
+    this.novoCorpo.rows[x].onmouseout = function() {
+    var _this = this.grid
+    this.grid.timer = setTimeout(function(){_this.removerOpcoes()},500)
+    if (this.className !="selected") { this.className = this.className.substring(0,this.className.indexOf(" hover")) }
+    }
+
+    // click event
+    this.novoCorpo.rows[x].onclick = function() {
+    //this.grid.executarTarefas()
+    this.grid.selecionarTr(this)
+    }
+
+  }
+}
+
+criarGrid.prototype.selecionarTr = function(tr) {
+if (this.trSelecionada) this.trSelecionada.className = "";
+
+this.funcoesTr();
+
+tr.className = "selected";
+
+this.trSelecionada = tr;
+}
+
+criarGrid.prototype.criarOverlay = function() {
+if (this.protecao) this.removerOverlay()
+this.protecao = true
+
+this.overlay = document.createElement("div")
+this.overlay.className = "overlay_grid"
+this.overlay.style.filter = "alpha(opacity=40)";
+this.overlay.style.opacity = "0.4";
+this.overlay.style.mozOpacity = "0.4";
+this.overlay.style.height = this.divHolder.offsetHeight + 20 + "px"
+this.overlay.style.width = this.novaTabela.offsetWidth + 20 + "px"
+
+this.overlay.style.top = this.scroller ? findPos(this.tabela)[1] - this.scroller.scrollTop + "px" : findPos(this.tabela)[1] + "px";
+this.overlay.style.left = findPos(this.tabela)[0] + "px"
+this.holder.appendChild(this.overlay)
+
+this.divHolder.style.overflow = "hidden"
+
+this.botaoAdicionar.onclick = function() { return false }
+}
+
+criarGrid.prototype.removeOverlay = function() {
+this.overlay.parentNode.removeChild(this.overlay)
+this.protecao = false
+
+this.divHolder.style.overflow = "auto"
+this.botaoAdicionar.onclick = function() { eval(this.grid.fnAdicionar) }
+}
+
+criarGrid.prototype.editarLinha = function(tr) {
+if (this.navegacaoScroller) this.navegacaoScroller.style.overflow = "hidden";
+if (this.trSelecionada) this.trSelecionada.className = "";
+this.botaoAdicionar.style.display = "none";
+this.moveCima.style.visibility = "hidden";
+this.moveBaixo.style.visibility = "hidden";
+
+// aqui
+  this.divHolder.style.overflow = "hidden";
+
+  this.anchors = document.getElementsByTagName("a");
+
+  for (var x=0; x<this.anchors.length; x++) {
+  this.anchors[x].oldClick = this.anchors[x].onclick;
+  this.anchors[x].onclick = function() { return false }
+  }
+
+this.removerOpcoes()
+// this.criarOverlay()
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    this.novoCorpo.rows[x].onmouseover = this.novoCorpo.rows[x].onmouseout = function() { return false }
+  }
+
+  this.edicaoTable = document.createElement("table")
+  this.edicaoTable.className = "edicaoTable"
+  this.edicaoTbody = document.createElement("tbody")
+  this.cloneTr = tr.cloneNode(true)
+  this.edicaoTable.appendChild(this.edicaoTbody)
+  this.edicaoTbody.appendChild(this.cloneTr)
+
+  this.edicaoTable.style.width = tr.offsetWidth + "px"
+  this.edicaoTable.style.top = this.scroller ? findPos(tr)[1] - this.divHolder.scrollTop - this.scroller.scrollTop + "px" : findPos(tr)[1] - this.divHolder.scrollTop + "px"
+  this.edicaoTable.style.left = findPos(tr)[0] + "px"
+  alert( findPos(tr)[0] + "|1");
+  // metodos de edicao
+  for (var x=0; x<this.cloneTr.cells.length; x++) {
+  this.cloneTr.cells[x].style.width = tr.cells[x].offsetWidth + "px"
+
+    if (this.metodoEdicao[x] == "default") {
+    this.tempInputs[x] = document.createElement("input")
+    this.tempInputs[x].value = tr.cells[x].innerHTML
+
+      if (this.cloneTr.cells[x].childNodes.length > 0) {
+      this.cloneTr.cells[x].replaceChild(this.tempInputs[x],this.cloneTr.cells[x].childNodes[0])
+      }
+
+      else {
+      this.cloneTr.cells[x].appendChild(this.tempInputs[x]);
+      }
+    }
+
+    else if (this.metodoEdicao[x] && this.metodoEdicao[x].length > 1) {
+    this.tempInputs[x] = document.createElement("select")
+
+
+      for (var y=0; y<this.metodoEdicao[x].length; y++) {
+      opcaoTemp = document.createElement("option")
+
+      isArray = (typeof this.metodoEdicao[x][y] == "object" && "splice" in this.metodoEdicao[x][y] && "join" in this.metodoEdicao[x][y]) ? true : false;
+
+        if (isArray) {
+          opcaoTemp.innerHTML = this.metodoEdicao[x][y][0];
+          opcaoTemp.value = this.metodoEdicao[x][y][1];
+        }
+
+        else {
+          opcaoTemp.innerHTML = this.metodoEdicao[x][y];
+          opcaoTemp.value = this.metodoEdicao[x][y];
+        }
+
+      this.tempInputs[x].appendChild(opcaoTemp)
+      }
+    this.cloneTr.cells[x].replaceChild(this.tempInputs[x],this.cloneTr.cells[x].childNodes[0])
+
+      for (var y=0; y<this.tempInputs[x].options.length; y++) {
+        if (this.tempInputs[x].options[y].innerHTML.toLowerCase() == tr.cells[x].innerHTML.toLowerCase()) {
+        this.tempInputs[x].options[y].selected = "selected"
+        }
+      }
+    }
+
+    else {
+    this.tempInputs[x] = document.createElement("input")
+    this.tempInputs[x].disabled = "disabled"
+
+      if (tr.cells[x].childNodes.length < 2) {
+      this.tempInputs[x].value = tr.cells[x].innerHTML
+      }
+      else {
+      this.tempInputs[x].value = tr.cells[x].childNodes[0].nodeValue
+      }
+
+      while (this.cloneTr.cells[x].childNodes.length > 0) { this.cloneTr.cells[x].removeChild(this.cloneTr.cells[x].childNodes[0]) }
+
+    this.cloneTr.cells[x].appendChild(this.tempInputs[x])
+    }
+
+  }
+
+  this.holder.appendChild(this.edicaoTable)
+
+  this.botaoAceitar = new Image()
+  this.botaoAceitar.src = "/images/estatico/imagens/aceitar.gif"
+  this.botaoAceitar.className = "botaoAceitar"
+  this.botaoAceitar.grid = this
+  this.botaoAceitar.onclick = function() { this.grid.aceitarEdicao(tr) }
+  this.botaoAceitar.style.top = parseInt(this.edicaoTable.style.top) + this.edicaoTable.offsetHeight/6 + "px"
+  this.botaoAceitar.style.left = parseInt(this.edicaoTable.style.left) + this.edicaoTable.offsetWidth + 3 + "px"
+  this.holder.appendChild(this.botaoAceitar)
+
+  this.botaoCancelar = new Image()
+  this.botaoCancelar.src = "/images/estatico/imagens/cancelar.gif"
+  this.botaoCancelar.className = "botaoCancelar"
+  this.botaoCancelar.grid = this
+  this.botaoCancelar.onclick = function() { this.grid.cancelarEdicao() }
+  this.botaoCancelar.style.top = parseInt(this.botaoAceitar.style.top) + "px"
+  this.botaoCancelar.style.left = parseInt(this.edicaoTable.style.left) + this.edicaoTable.offsetWidth + 20 + "px"
+  this.holder.appendChild(this.botaoCancelar)
+}
+
+criarGrid.prototype.aceitarEdicao = function(tr) {
+
+  for (var x=0; x<this.tempInputs.length; x++) {
+
+    if (this.unicoEdicao != null && this.unicoEdicao[x] !=null && this.tempInputs[x].value != this.metodoEdicao[x][this.unicoEdicao[x]]) {
+      for (var y=0; y<this.novoCorpo.rows.length; y++) {
+      this.novoCorpo.rows[y].cells[x].innerHTML = this.metodoEdicao[x][this.unicoEdicao[x]]
+      }
+    }
+    if (tr.cells[x].childNodes.length < 2) {
+    tr.cells[x].innerHTML = this.tempInputs[x].value
+    }
+  }
+
+this.cancelarEdicao()
+this.executarTarefas()
+}
+
+criarGrid.prototype.cancelarEdicao = function() {
+if (this.navegacaoScroller) this.navegacaoScroller.style.overflow = "auto";
+this.botaoAdicionar.style.display = "block";
+this.divHolder.style.overflow = "auto";
+this.edicaoTable.parentNode.removeChild(this.edicaoTable)
+this.botaoCancelar.parentNode.removeChild(this.botaoCancelar)
+this.botaoAceitar.parentNode.removeChild(this.botaoAceitar)
+this.funcoesTr();
+this.moveCima.style.visibility = this.esconderSetas ? "hidden" : "visible";
+this.moveBaixo.style.visibility = this.esconderSetas ? "hidden" : "visible";
+
+  for (var x=0; x<this.anchors.length; x++) {
+  this.anchors[x].onclick = this.anchors[x].oldClick;
+  }
+}
+
+criarGrid.prototype.excluirLinha = function(tr) {
+
+  if (this.manterPrimeiraLinha) {
+    if(tr.id == "equipe" && tr.rowIndex==0){
+      self.parent.caixaMsg.exibir({
+        titulo:"Atenção",
+        conteudo:"Exclusão não permitida!",
+        classe:"alerta",
+        tipo:"alerta"
+      })
+      return false;
+    }
+  }
+
+this.removerOpcoes();
+tr.parentNode.removeChild(tr);
+this.executarTarefas();
+if (this.fnMovimento) eval(this.fnMovimento);
+}
+
+criarGrid.prototype.limparGrid = function() {
+  while (this.novoCorpo.rows.length > 0) { this.novoCorpo.removeChild(this.novoCorpo.rows[0]) }
+  this.executarTarefas();
+}
+
+criarGrid.prototype.removerOpcoes = function() {
+if (this.divEdicaoTr) this.divEdicaoTr.parentNode.removeChild(this.divEdicaoTr)
+this.opcoes = false
+}
+
+criarGrid.prototype.mostrarOpcoes = function(tr) {
+if (this.opcoes) this.removerOpcoes()
+
+this.opcoes = true
+
+this.divEdicaoTr = document.createElement("div")
+this.divEdicaoTr.style.display = this.exibirControle ? "block" : "none";
+this.divEdicaoTr.className = "divEdicao"
+this.divEdicaoTr.grid = this
+
+  this.divEdicaoTr.onmouseover = function() { if (this.grid.timer) clearTimeout(this.grid.timer) }
+  this.divEdicaoTr.onmouseout = function() {
+  var _this = this.grid
+  this.grid.timer = setTimeout(function(){_this.removerOpcoes()},500)
+  }
+
+/* lugar original - fim da funcao */
+this.divEdicaoTr.style.top = this.scroller ? findPos(tr)[1] - this.divHolder.scrollTop - this.scroller.scrollTop + "px" : findPos(tr)[1] - this.divHolder.scrollTop + "px"
+this.divEdicaoTr.style.left = "77%";
+
+/* ----------------------------- */
+
+this.holder.appendChild(this.divEdicaoTr)
+
+if (!this.bloquearEdicao) {
+this.botaoEditar = new Image()
+this.botaoEditar.grid = this
+this.botaoEditar.alt = "Clique aqui para editar a linha " + (tr.rowIndex + 1)
+this.botaoEditar.title = "Clique aqui para editar a linha " + (tr.rowIndex + 1)
+this.botaoEditar.onclick = function() { this.grid.editarLinha(tr) }
+this.botaoEditar.src = "/images/estatico/imagens/lapis.gif"
+this.divEdicaoTr.appendChild(this.botaoEditar)
+}
+
+this.botaoExcluir = new Image()
+this.botaoExcluir.grid = this
+this.botaoExcluir.alt = "Clique aqui para excluir a linha " + (tr.rowIndex + 1)
+this.botaoExcluir.title = "Clique aqui para excluir a linha " + (tr.rowIndex + 1)
+this.botaoExcluir.onclick = function() { this.grid.excluirLinha(tr) }
+this.botaoExcluir.src = "/images/estatico/imagens/lixeira.gif"
+this.divEdicaoTr.appendChild(this.botaoExcluir)
+
+// if (!this.bloquearEdicao) { this.divEdicaoTr.style.width = this.botaoEditar.offsetWidth + this.botaoExcluir.offsetWidth + 12 + "px" }
+
+}
+
+criarGrid.prototype.moverTr = function(qtd) {
+
+  if (!this.trSelecionada) return false;
+
+  oldIndex = this.trSelecionada.rowIndex;
+
+  if (oldIndex+qtd < this.novoCorpo.rows.length) {
+
+    if (oldIndex + qtd < 0 || oldIndex + qtd > this.novoCorpo.rows.length - 1) { return false }
+
+    if(qtd > 0) { this.novoCorpo.insertBefore(this.novoCorpo.rows[oldIndex+qtd],this.novoCorpo.rows[oldIndex]) }
+
+    else { this.novoCorpo.insertBefore(this.novoCorpo.rows[oldIndex],this.novoCorpo.rows[oldIndex+qtd]) }
+
+    if (this.novoCorpo.rows[oldIndex+qtd].offsetTop + this.novoCorpo.rows[oldIndex].offsetHeight > this.divHolder.scrollTop + this.tamMax) {
+    this.divHolder.scrollTop += this.novoCorpo.rows[oldIndex+qtd].offsetHeight
+    }
+
+    if (this.novoCorpo.rows[oldIndex+qtd].offsetTop < this.divHolder.scrollTop) {
+    this.divHolder.scrollTop = this.novoCorpo.rows[oldIndex+qtd].offsetTop
+    }
+
+    this.executarTarefas()
+
+  }
+
+if (this.fnMovimento) eval(this.fnMovimento)
+}
+
+criarGrid.prototype.organizarAutores = function() {
+  var conteudo, str, vnautcad = 0;
+     for (var i=0; i<this.valores.length; i++) {
+       str = i + 1;
+       conteudo = str + this.getConteudo(i,0).substring(this.getConteudo(i,0).indexOf("º"));;
+       this.setConteudo(i,0,conteudo);
+    }
+}
+
+criarGrid.prototype.exibirOrdenacao = function() {
+  var conteudo, str, vnautcad = 0;
+     for (var i=0; i<this.valores.length; i++) {
+       str = i + 1;
+     conteudo = (this.getConteudo(i,0).toUpperCase().indexOf("<SPAN>") != -1) ? str + this.getConteudo(i,0).substring(this.getConteudo(i,0).toUpperCase().indexOf("<SPAN>")) : str;
+       this.setConteudo(i,0,conteudo);
+    }
+}
+
+criarGrid.prototype.executarTarefas = function() {
+this.corrigirLargura();
+this.funcoesTr();
+this.associarValores();
+this.verificarTamanho();
+
+this.tabela.style.visibility = "visible";
+}
+
+criarGrid.prototype.corrigirLargura = function() {
+  for (var x=0; x<this.numCol; x++) {
+  if (this.largura) { this.cabecalho.rows[0].cells[x].style.width = this.largura[x] + "%" }
+    for (var y=0; y<this.novoCorpo.rows.length; y++) {
+    if (this.largura) { this.novoCorpo.rows[y].cells[x].style.width = this.largura[x] + "%" }
+    if (this.alinhamento) { this.novoCorpo.rows[y].cells[x].style.textAlign = this.alinhamento[x] }
+    }
+  }
+}
+
+criarGrid.prototype.organizarEstrutura = function() {
+  this.scrollBar = document.createElement("th")
+  this.trHolder = document.createElement("tr")
+  this.tdHolder = document.createElement("td")
+  this.divHolder = document.createElement("div")
+  this.novaTabela = document.createElement("table")
+  this.novoCorpo = document.createElement("tbody")
+
+  this.novoRodape = document.createElement("tfoot");
+  this.trRodape = document.createElement("tr");
+  this.tdRodape = document.createElement("td");
+
+  while (this.corpo.rows.length > 0) { this.novoCorpo.appendChild(this.corpo.rows[0]) }
+
+  this.scrollBar.innerHTML = "&nbsp;"
+  this.scrollBar.className = "scrollBar"
+  this.cabecalho.rows[0].appendChild(this.scrollBar)
+
+  this.corpo.appendChild(this.trHolder)
+
+  this.tdHolder.colSpan = (this.numCol+1)
+  this.trHolder.appendChild(this.tdHolder)
+
+  this.divHolder.className = "holder"
+  this.divHolder.style.height = this.tamMax + "px"
+  this.tdHolder.appendChild(this.divHolder)
+
+  this.divHolder.appendChild(this.novaTabela)
+
+  this.novaTabela.appendChild(this.novoCorpo)
+
+  this.tabela.appendChild(this.novoRodape);
+  this.novoRodape.appendChild(this.trRodape);
+  this.trRodape.appendChild(this.tdRodape);
+
+  this.tdRodape.className = "rodapeGrid";
+  this.tdRodape.colSpan = this.numCol;
+
+  this.botaoAdicionar = new Image()
+  this.botaoAdicionar.grid = this
+  this.botaoAdicionar.style.display = this.exibirAdicionar ? "block" : "none";
+  this.botaoAdicionar.onmouseover = function() { this.src = "/images/estatico/imagens/add2-hover.gif" }
+  this.botaoAdicionar.onmouseout = function() { this.src = "/images/estatico/imagens/add2.gif" }
+  this.botaoAdicionar.className = "botaoAdicionar"
+  this.botaoAdicionar.src = "/images/estatico/imagens/add2.gif"
+  this.botaoAdicionar.onclick = function() { eval(this.grid.fnAdicionar) }
+  this.tdRodape.appendChild(this.botaoAdicionar);
+
+  this.moveBaixo = document.createElement("img")
+  this.moveBaixo.grid = this
+  this.moveBaixo.alt = "Move a linha para baixo"
+  this.moveBaixo.title = "Move a linha para baixo"
+  this.moveBaixo.className = "gridSetaBaixo"
+  this.moveBaixo.style.visibility = this.esconderSetas ? "hidden" : "visible";
+  this.moveBaixo.src = "/images/estatico/imagens/down.gif"
+  this.moveBaixo.onmouseover = function() { this.src = "/images/estatico/imagens/down-hover.gif" }
+  this.moveBaixo.onmouseout = function() { this.src = "/images/estatico/imagens/down.gif" }
+  this.moveBaixo.onclick = function() { this.grid.moverTr(1) }
+  this.tdRodape.appendChild(this.moveBaixo)
+
+  this.moveCima = document.createElement("img")
+  this.moveCima.grid = this
+  this.moveCima.className = "gridSetaCima"
+  this.moveCima.alt = "Move a linha para cima"
+  this.moveCima.title = "Move a linha para cima"
+  this.moveCima.style.visibility = this.esconderSetas ? "hidden" : "visible";
+  this.moveCima.src = "/images/estatico/imagens/up.gif"
+  this.moveCima.onmouseover = function() { this.src = "/images/estatico/imagens/up-hover.gif" }
+  this.moveCima.onmouseout = function() { this.src = "/images/estatico/imagens/up.gif" }
+  this.moveCima.onclick = function() { this.grid.moverTr(-1) }
+  this.cabecalho.rows[0].cells[this.numCol-1].insertBefore(this.moveCima,this.cabecalho.rows[0].cells[this.numCol-1].childNodes[0])
+
+}
+
+criarGrid.prototype.getConteudo = function(row,cell) {
+  return (this.novoCorpo.rows[row].cells[cell].innerHTML);
+}
+
+criarGrid.prototype.setConteudo = function(row,cell,conteudo) {
+  this.novoCorpo.rows[row].cells[cell].innerHTML = conteudo;
+}
+
+criarGrid.prototype.adicionarDados = function(dados,index,autor) {
+
+  if (this.numMaxRegistros && this.novoCorpo.rows.length >= this.numMaxRegistros) {
+    self.parent.caixaMsg.exibir({
+      titulo:"Atenção",
+      conteudo:"Número máximo de registros atingido",
+      classe:"alerta",
+      tipo:"alerta"
+    })
+  return false;
+  }
+
+inserirDados = true
+
+  if (autor) {
+    for (var x=0; x<this.novoCorpo.rows.length; x++) {
+      span = this.novoCorpo.rows[x].cells[0].getElementsByTagName("span");
+
+      if (span[0].innerHTML.indexOf("-") !=-1 && dados[0].indexOf("-") !=-1 || span[0].innerHTML.indexOf("D") != -1 && dados[0].indexOf("-") !=-1) {
+      inserirDados = false;
+      }
+    }
+  }
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    if (!index) {
+    contadorIgualdade = dados.length
+      for (var y=0; y<dados.length; y++) {
+        if (this.novoCorpo.rows[x].cells[y].innerHTML.toUpperCase() == dados[y].toUpperCase()) {
+        contadorIgualdade--
+        }
+        if (!contadorIgualdade) {
+        inserirDados = false
+        break
+        }
+      }
+    }
+    else {
+      if (this.novoCorpo.rows[x].cells[index].innerHTML.toUpperCase() == dados[index].toUpperCase()) {
+      inserirDados = false
+      break
+      }
+    }
+  }
+
+  if (inserirDados) {
+    this.novoCorpo.insertRow(this.novoCorpo.rows.length)
+
+    for (var x=0; x<dados.length; x++) {
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].insertCell(x)
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].cells[x].innerHTML = dados[x]
+    }
+
+    this.divHolder.scrollTop = this.divHolder.scrollHeight
+
+    this.executarTarefas()
+  }
+
+  else {
+    self.parent.caixaMsg.exibir({
+      titulo:"Atenção",
+      conteudo:"Informação existente",
+      classe:"alerta",
+      tipo:"alerta"
+    })
+  }
+}
+
+criarGrid.prototype.getItems = function() {
+return this.novoCorpo.getElementsByTagName("tr");
+}
+
+criarGrid.prototype.importarDados = function(tr) {
+
+  if (this.numMaxRegistros && this.novoCorpo.rows.length >= this.numMaxRegistros) {
+  self.parent.caixaMsg.exibir({
+    titulo:"Atenção",
+    conteudo:"Número máximo de registros atingido",
+    classe:"alerta",
+    tipo:"alerta"
+  })
+  return false;
+  }
+
+inserirTr = true
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    conteudoAtual = this.novoCorpo.rows[x].textContent ? this.novoCorpo.rows[x].textContent : this.novoCorpo.rows[x].innerText
+    conteudoNovo = tr.textContent ? tr.textContent : tr.innerText
+    if (conteudoAtual == conteudoNovo) { inserirTr = false }
+  }
+
+  if (inserirTr) {
+
+  this.novoCorpo.insertRow(this.novoCorpo.rows.length)
+
+    for (var x=0; x<this.numCol; x++) {
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].insertCell(x)
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].cells[x].innerHTML = tr.getElementsByTagName("td")[x].innerHTML
+    }
+
+  this.divHolder.scrollTop = this.divHolder.scrollHeight
+
+  this.executarTarefas()
+  }
+
+  else {
+    self.parent.caixaMsg.exibir({
+      titulo:"Atenção",
+      conteudo:"Informação existente",
+      classe:"alerta",
+      tipo:"alerta"
+    })
+  }
+}
+
+
+
+  </script>
+  <script type="text/javascript" src="/images/estatico/js/caixa_msg.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/jquery-ui-1.8.13.custom.min.js"></script>
+  
+  <script type="text/javascript" src="/images/estatico/js/acessibilidade-modais.js"></script>
+  
+  <script type="text/javascript" src="/images/estatico/js/jquery.tipsy.js"></script>
+  
+  <link rel="stylesheet" type="text/css" href="/images/estatico/css/tooltip-manager.css">
+  <link rel="stylesheet" type="text/css" href="/images/estatico/css/tooltip-position.css">
+
+  <link rel="stylesheet" href="/images/estatico/css/curriculo_new.css">
+  <link rel="stylesheet" href="/images/estatico/css/cv_navegacao.css">
+  <link rel="stylesheet" href="/images/estatico/css/lattes.gui.css">
+  <link rel="stylesheet" href="/images/estatico/css/jquery-ui-1.8.13.custom.css">
+
+  <link rel="stylesheet" href="/images/estatico/css/popup.css">
+
+<style>
+
+html, body {background:#CCDCEF; height:100%;}
+table {font:normal 11px arial}
+form {height:100%; width:100%}
+textarea { border:1px solid Gray;font-family:Arial,Helvetica,sans-serif;font-size:11px; }
+* html input, * html textarea, * html select {font:normal 11px arial}
+input[disabled]{background-color:#F0F0F0 ;}
+</style>
+
+
+        <script>
+
+$(document).ready(function(){
+// habilita a instancia desejada do modal
+self.parent.modalCV2.habilitaModal();
+self.parent.modalCV2.setarTitulo("Atuação profissional", true );
+});
+
+</script>
+
+
+
+</head>
+<body>
+
+
+
+<script>
+
+function trim(stringToTrim) {
+	return stringToTrim.replace(/^\s+|\s+$/g,"");
+}
+
+
+  String.prototype.ltrim = function() {
+  return this.replace(/^\s+/,"");
+}
+
+String.prototype.rtrim = function() {
+	return this.replace(/\s+$/,"");
+}
+
+$(document).ready(function(){
+
+var childsAreaSelecao = $(".areaSelecao > *" );
+if( childsAreaSelecao.length == 0 ){
+$(".areaSelecao").css("width","auto");
+$(".scroller").css("width","735px");
+}
+
+/*$("textarea[maxlength]").keyup(function(event){
+var valor = $(this).val();
+var maxLength = $(this).attr("maxlength");
+
+if (valor > maxLength){
+$(this).val(  valor.substring(0, maxLength)  );
+}
+})*/;
+
+$(".areaSelecao > a").each(function(){
+$(this).attr("title", $(this).attr("title").ltrim());
+$(this).attr("title", $(this).attr("title").rtrim());
+});
+});
+</script>
+
+<script>
+//variaveis de controle - snapshot da página
+
+var ctA=-1;
+var arNome= new Array();
+var arTipo= new Array();
+var arValor= new Array();
+
+var NS4, IE4, NS6, ver4;
+var styleok=0;
+var navok=0;
+if (navigator.appVersion.charAt(0) == "5") {
+  if (navigator.appName == "Netscape") {
+    NS6 = 1; styleok=1; navok=1;
+  }
+} else if (document.layers) {
+   NS4 = 1; styleok=0;  navok=1;
+} else if (document.all) {
+  IE4 = 1;  styleok=1;  navok=1;
+}
+
+// controle para marcacao de campos invalidos //
+var cte_old=0;
+obj = new Array();
+obj_old = new Array();
+
+function trim(str) {
+  i=0;
+  while (((str.substring(i,i+1))== " ")&&(i < str.length)) i++;
+  aux=str.substring(i,str.length); i=aux.length;
+  while (((aux.substring(i-1,i)) == " ")&&(i>1)) i--;
+  aux=aux.substring(0,i);
+  return aux;
+}
+function e_Num(valor){
+  en=true; st="0123456789"; aux=trim(valor); ct=0;
+  while (ct+1 <= aux.length) {
+    if (st.indexOf(aux.substring(ct,ct+1))== -1) {
+      en=false; break;
+    }
+    ct++;
+  }
+  return (en);
+}
+function check_data(valor) {
+  vlraux = trim(valor);
+  if ((vlraux == "") || (vlraux.length != 10) ||
+     (vlraux.substring(2,3) != "/") ||(vlraux.substring(5,6)!= "/")){
+     return false;
+  }
+  dia = parseInt(vlraux.substring(0,2),10); mes = parseInt(vlraux.substring(3,5),10);
+  ano = parseInt(vlraux.substring(6,10),10);
+  if (isNaN(dia) || isNaN(mes) || isNaN(ano) || (mes < 1) || (mes > 12) || (dia < 1)) {
+    return false;
+  }
+  tabmes = "312831303130313130313031";
+  if ((dia == 29) && (mes == 2)){
+    if ((ano == 0) || ((ano % 4) != 0)){
+      return false;
+    } else {
+  return true;
+    }
+  }
+  k = (mes * 2 - 2)
+  if (dia > tabmes.substring(k,k + 2)) {
+    return false;
+  } else {
+    return true;
+  }
+ return false;
+}
+function checkcep(vlr){
+  num="0123456789";
+  if (vlr.length!=9) {
+    return false;
+  } else {
+    for (i=0;i<8;i++){
+      if ((i==5)&&((vlr.substring(i,i+1))!="-")){
+        return false;
+      } else if ((num.indexOf(vlr.substring(i,i+1))==-1)&&(i!=5)){
+        return false;
+      }
+    }
+  }
+  return true;
+}
+function checkmail(vlr){
+  if ((vlr.indexOf("@")==-1)||(vlr.indexOf(" ")!=-1)||(vlr.indexOf(",")!=-1)||(vlr.indexOf(";")!=-1)){
+    return false;
+  } else { return true;
+  }
+}
+
+function posicionarCampo(obj) {
+  document.getElementById("conteudoNavegacao").scrollTop = findPos(obj)[1] - 5;
+}
+
+function alerta(err) {
+  var cp;
+  estilopadrao(cte_old);
+  saida = "Não foi possível atualizar as informações porque ocorreram os seguintes problemas:\n\n<br><br>";
+  for (i=0; i <= err-1; i++) {
+    saida += msg[i] + "<br>";
+    if (styleok) {
+      nmecampo= obj[i].toUpperCase();
+      if (nmecampo!="DC.F_AUTORES_PROD" && nmecampo!="DC.F_AUTORES_L" ) {
+        cp=eval(obj[i]);
+       // cp.style.backgroundColor="#FFFFDC";
+       $(cp).addClass("input-error");
+        if (i==0) {
+           posicionarCampo(cp);
+        }
+      }
+    }
+  }
+
+  cte_old = err;
+  copiaArray (obj, obj_old);
+
+// alert(saida);
+//  self.parent.caixaMsg.exibir("Atenção",saida, null,true,"alerta");
+
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: saida,
+  classe:"alerta",
+  tipo:"alert"});
+  if (obj[0].toUpperCase() !="DC.F_AUTORES_PROD" && nmecampo!="DC.F_AUTORES_L") {
+    cp = eval(obj[0]);
+    if(!cp.disabled){
+         cp.focus();
+    }
+  }
+  return;
+}
+function estilopadrao(e) {
+  if (styleok) {
+    for (i=0; i <= e-1; i++) {
+
+      nmecampo= obj_old[i].toUpperCase();
+      if (nmecampo!="DC.F_AUTORES_PROD") {
+        cp=eval(obj_old[i]);
+        $(cp).removeClass("input-error");
+      //  cp.style.backgroundColor="#FFFFFF";
+      }
+    }
+  }
+  return;
+}
+
+function copiaArray(v1,v2){
+  for (var i=0; i < v1.length; i++) {
+    v2[i] = v1[i];
+  }
+  return;
+}
+
+// funcoes para fazer snapshot da pagina
+
+function pegaValor(_nomeC){
+   var vs="";
+   ob=eval("dc."+ _nomeC);
+   for (var ls=0; ls< ob.length; ls++) {
+     if (ob[ls].checked) {
+       vs=ob[ls].value;
+     break;
+    }
+  }
+    return vs;
+}
+
+function pegaTodosValores(_nome){
+ vl="";
+ obz=eval("dc." + _nome);
+ for (var j=0; j< obz.length; j++) {
+   vl+= obz[j].value;
+ }
+ return vl
+}
+
+function adicionaElemento (_nome, _tipo , _valor) {
+  nomelc=_nome.toLowerCase();
+  if (!((nomelc=="f_ctr")||(nomelc=="f_cod")||(nomelc=="f_seq")||
+  (nomelc=="f_autores_l")||(nomelc=="f_setor_l")||(nomelc=="f_area_l")||(nomelc=="f_plv_l")||
+  (nomelc=="f_autores_prod")||(nomelc=="f_setor_prod")||(nomelc=="f_area_prod")||(nomelc=="f_plv_prod") )) {
+    ctA++;
+    arNome[ctA]=_nome;
+    arTipo[ctA]=_tipo;
+    arValor[ctA]=_valor;
+  } else if ((nomelc=="f_autores_prod")||(nomelc=="f_setor_prod")||(nomelc=="f_area_prod")||(nomelc=="f_plv_prod") ) {
+    ctA++;
+    arNome[ctA]= _nome;
+    arTipo[ctA]=_tipo;
+    arValor[ctA]= pegaTodosValores(_nome);
+  }
+
+}
+
+function formSnapShot() {
+  var saida="";
+  var fim = dc.elements.length;
+
+  for (var i=0; i < fim; i++) {
+    nome=""; tipo=""; valor="";
+    tipo=dc.elements[i].type;
+    nome=dc.elements[i].name;
+
+    if ( (tipo == "text") || (tipo == "hidden") || (tipo == "textarea") ) {
+      valor=dc.elements[i].value;
+      adicionaElemento(nome, tipo, valor);
+
+    } else if (tipo == "select-one") {
+      valor=dc.elements[i][dc.elements[i].selectedIndex].value;
+      adicionaElemento(nome, tipo, valor);
+
+    } else if ((tipo == "radio") || (tipo == "checkbox")) {
+      valor=pegaValor(nome);
+      adicionaElemento(nome, tipo, valor);
+    }
+  }
+
+
+// for (var k=0; k<= ctA; k++){
+//   saida+=arNome[k] + "  " + arTipo[k] + "  " + arValor[k] + "\n";
+// }
+ alert("snapshot campos do formulário : \n\n" + saida);
+
+}
+
+function formModificado(){
+  var saida2 = "";
+  mudou=false;
+  for (var k=0; k<= ctA; k++){
+    objm = eval("dc." + arNome[k]);
+    objt = arTipo[k];
+    if (!((objt == "radio") || (objt == "checkbox"))) {
+      if ((arNome[k]=="f_autores_prod")||(arNome[k]=="f_setor_prod")||(arNome[k]=="f_area_prod")||(arNome[k]=="f_plv_prod")) {
+        if ((pegaTodosValores(arNome[k]))!=arValor[k] ){
+          mudou=true;
+          saida2+= "2 campo " + arNome[k] + " foi modificado : " + pegaTodosValores(arNome[k]) + " \n-> " + arValor[k] + "\n\n";
+          break;
+        }
+      } else if (objm.value != arValor[k]) {
+          mudou=true;
+          saida2+= "1 campo " + arNome[k] + " foi modificado : " + objm.value  + " \n-> " + arValor[k] + "\n\n";
+          break;
+      }
+    } else if ((pegaValor(arNome[k]))!=arValor[k] ){
+          mudou=true;
+          saida2+= "3 campo " + arNome[k] + " foi modificado : " + pegaValor(arNome[k]) + " \n-> " + arValor[k] + "\n\n";
+          break;
+    }
+  }
+//  if (!mudou) saida2="os dados nao foram modificados.";
+//  if (saida2!="") alert(saida2);
+  return mudou;
+}
+
+function v(endereco) {
+  if (formModificado()){
+    if (confirm("Foram realizadas modificações nesta página que ainda não foram gravadas\n e as mesmas serão descartadas.\n\nDeseja prosseguir?")) {
+//      fecha();
+      location=endereco;
+    }
+  } else {
+//      fecha();
+      location=endereco;
+  }
+  return;
+}
+
+function voltar() {
+  if (formModificado()){
+    if (confirm("Foram realizadas modificações nesta página que ainda não foram gravadas\n e as mesmas serão descartadas.\n\nDeseja prosseguir?")) {
+      cancelar();
+    }
+  } else {
+      cancelar();
+  }
+  return;
+}
+
+/*function alertBox(arg) {
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: arg,
+  classe:"alerta",
+  tipo:"alert"});
+  return;
+}
+
+function confirmBox(arg) {
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: arg,
+  classe:"alerta",
+  tipo:"confirm"});
+  return;
+}*/
+
+</script>
+
+<script>
+/*Define altura para tela_menor*/
+$(document).ready(function(){
+$(".controle").each(function(){
+$(".tela_menor").css("max-height","386px");
+});
+});
+</script>
+
+<script>
+/*Define altura para tela_menor*/
+$(document).ready(function(){
+$(".controle_peq").each(function(){
+$(".tela_menor").css("max-height","386px");
+});
+});
+</script>
+
+<form action="PKG_ATIV.INCLUI" name="GN_ATIV" method="POST">
+<script>
+    var exibeMsgOutros = true;
+    function servidor(){
+    var $this = $("input[name=f_vinculo]");
+    if($this.val().toUpperCase() == "SERVIDOR PÚBLICO" || $this.val().toUpperCase() == "CELETISTA")
+    $("select[name=f_stavinc]").val("1");
+    if($this.val().toUpperCase() == "BOLSISTA" || $this.val().toUpperCase() == "PROFESSOR VISITANTE" || $this.val().toUpperCase() == "COLABORADOR" || $this.val().toUpperCase() == "")
+    $("select[name=f_stavinc]").val("0");
+    if($this.val().toUpperCase() == ""){
+     if(exibeMsgOutros){
+      exibeMsgOutros = false;
+      alert("Qualquer vínculo preenchido na opção OUTROS não será considerado como empregatício.");
+     }
+     $("select[name=f_stavinc]").val("0");
+    }
+
+
+
+
+    }
+
+    $(document).ready(function() {
+      $("input[name=f_vinc]").focus(servidor);
+      $("input[name=f_vinc]").blur(servidor);
+      $("select[name=f_stavinc]").attr("readonly","readonly").css("background","#F0F0F0");
+
+    });
+
+dc=document.GN_ATIV;
+ab=1;
+function fecha(){
+  return;
+}
+
+function sele_inst(){
+    nivel="";
+    fecha();
+    url="prc_inst_ativ?f_modal_cv=2&f_pgm=ATIVP&f_cod=K1237839P9"
+    self.parent.modalCV3.setarUrl(url,true,70,350,450);
+    ab=0;
+  return true;
+}
+
+function enviar(){
+  fecha();
+  dc.submit();
+  return true;
+}
+function cancelar(){
+  fecha();
+  dc.f_ctr.value="V"; enviar();
+  return true;
+}
+function alertainst(obj){
+  alert("O campo Instituicao nao deve ser alterado manualmente. Utilize o ícone pra fazer a selecao.");
+  dc.f_inst.value=dc.f_inst_old.value;
+  obj.focus();
+  return;
+}
+</script>
+
+
+<style>
+  .imagemOculta{display: none;cursor: pointer;}
+</style>
+
+
+
+<div class="navegacao"><div class="areaSelecao" style="height: 385px;"><a class="selecionado" href="javascript:void(0)" title="Instituição">Instituição</a><a href="javascript:void(0)" title="Vínculo">Vínculo</a><a href="javascript:void(0)" title="Período">Período</a><a href="javascript:void(0)" title="Outras informações">Outras informaç...</a><a href="javascript:void(0)" title="Visibilidade">Visibilidade</a></div>
+  <fieldset style="height: 385px;">
+    <div class="scroller" id="conteudoNavegacao">
+      <div class="conteudo">
+
+ <div id="helpCont0" style="">
+         <a href="https://ajuda.cnpq.br/index.php/Atuacao_profissional" target="blank" id="helpHref" class="ajudaFora">
+            <img src="/images/estatico/imagens/help-icon_24.gif" border="0" style="float:right !important">Ajuda
+ </a>
+ </div>
+<em titulo="Instituição">
+Instituição
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+Nome da Instituição<br>
+<input type="text" class="input-lupa" name="f_inst" disabled="true" value="" size="65" maxlength="75" onchange="alertainst(this);">
+<a title="Clique aqui para selecionar a instituição" onclick="sele_inst();return false;" class="lupa" href="#"></a>
+<br><br>
+<input type="hidden" name="f_vinculo" value="">
+<input type="hidden" name="f_cod_inst" value="">
+<input type="hidden" name="f_cod_inst2" value="">
+<input type="hidden" name="f_instold" value="">
+<input type="hidden" name="f_inst_old" value="">
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+
+
+<script>
+
+function trim(stringToTrim) {
+	return stringToTrim.replace(/^\s+|\s+$/g,"");
+}
+
+
+  String.prototype.ltrim = function() {
+  return this.replace(/^\s+/,"");
+}
+
+String.prototype.rtrim = function() {
+	return this.replace(/\s+$/,"");
+}
+
+$(document).ready(function(){
+
+var childsAreaSelecao = $(".areaSelecao > *" );
+if( childsAreaSelecao.length == 0 ){
+$(".areaSelecao").css("width","auto");
+$(".scroller").css("width","735px");
+}
+
+/*$("textarea[maxlength]").keyup(function(event){
+var valor = $(this).val();
+var maxLength = $(this).attr("maxlength");
+
+if (valor > maxLength){
+$(this).val(  valor.substring(0, maxLength)  );
+}
+})*/;
+
+$(".areaSelecao > a").each(function(){
+$(this).attr("title", $(this).attr("title").ltrim());
+$(this).attr("title", $(this).attr("title").rtrim());
+});
+});
+</script>
+
+<script>
+//variaveis de controle - snapshot da página
+
+var ctA=-1;
+var arNome= new Array();
+var arTipo= new Array();
+var arValor= new Array();
+
+var NS4, IE4, NS6, ver4;
+var styleok=0;
+var navok=0;
+if (navigator.appVersion.charAt(0) == "5") {
+  if (navigator.appName == "Netscape") {
+    NS6 = 1; styleok=1; navok=1;
+  }
+} else if (document.layers) {
+   NS4 = 1; styleok=0;  navok=1;
+} else if (document.all) {
+  IE4 = 1;  styleok=1;  navok=1;
+}
+
+// controle para marcacao de campos invalidos //
+var cte_old=0;
+obj = new Array();
+obj_old = new Array();
+
+function trim(str) {
+  i=0;
+  while (((str.substring(i,i+1))== " ")&&(i < str.length)) i++;
+  aux=str.substring(i,str.length); i=aux.length;
+  while (((aux.substring(i-1,i)) == " ")&&(i>1)) i--;
+  aux=aux.substring(0,i);
+  return aux;
+}
+function e_Num(valor){
+  en=true; st="0123456789"; aux=trim(valor); ct=0;
+  while (ct+1 <= aux.length) {
+    if (st.indexOf(aux.substring(ct,ct+1))== -1) {
+      en=false; break;
+    }
+    ct++;
+  }
+  return (en);
+}
+function check_data(valor) {
+  vlraux = trim(valor);
+  if ((vlraux == "") || (vlraux.length != 10) ||
+     (vlraux.substring(2,3) != "/") ||(vlraux.substring(5,6)!= "/")){
+     return false;
+  }
+  dia = parseInt(vlraux.substring(0,2),10); mes = parseInt(vlraux.substring(3,5),10);
+  ano = parseInt(vlraux.substring(6,10),10);
+  if (isNaN(dia) || isNaN(mes) || isNaN(ano) || (mes < 1) || (mes > 12) || (dia < 1)) {
+    return false;
+  }
+  tabmes = "312831303130313130313031";
+  if ((dia == 29) && (mes == 2)){
+    if ((ano == 0) || ((ano % 4) != 0)){
+      return false;
+    } else {
+  return true;
+    }
+  }
+  k = (mes * 2 - 2)
+  if (dia > tabmes.substring(k,k + 2)) {
+    return false;
+  } else {
+    return true;
+  }
+ return false;
+}
+function checkcep(vlr){
+  num="0123456789";
+  if (vlr.length!=9) {
+    return false;
+  } else {
+    for (i=0;i<8;i++){
+      if ((i==5)&&((vlr.substring(i,i+1))!="-")){
+        return false;
+      } else if ((num.indexOf(vlr.substring(i,i+1))==-1)&&(i!=5)){
+        return false;
+      }
+    }
+  }
+  return true;
+}
+function checkmail(vlr){
+  if ((vlr.indexOf("@")==-1)||(vlr.indexOf(" ")!=-1)||(vlr.indexOf(",")!=-1)||(vlr.indexOf(";")!=-1)){
+    return false;
+  } else { return true;
+  }
+}
+
+function posicionarCampo(obj) {
+  document.getElementById("conteudoNavegacao").scrollTop = findPos(obj)[1] - 5;
+}
+
+function alerta(err) {
+  var cp;
+  estilopadrao(cte_old);
+  saida = "Não foi possível atualizar as informações porque ocorreram os seguintes problemas:\n\n<br><br>";
+  for (i=0; i <= err-1; i++) {
+    saida += msg[i] + "<br>";
+    if (styleok) {
+      nmecampo= obj[i].toUpperCase();
+      if (nmecampo!="DC.F_AUTORES_PROD" && nmecampo!="DC.F_AUTORES_L" ) {
+        cp=eval(obj[i]);
+       // cp.style.backgroundColor="#FFFFDC";
+       $(cp).addClass("input-error");
+        if (i==0) {
+           posicionarCampo(cp);
+        }
+      }
+    }
+  }
+
+  cte_old = err;
+  copiaArray (obj, obj_old);
+
+// alert(saida);
+//  self.parent.caixaMsg.exibir("Atenção",saida, null,true,"alerta");
+
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: saida,
+  classe:"alerta",
+  tipo:"alert"});
+  if (obj[0].toUpperCase() !="DC.F_AUTORES_PROD" && nmecampo!="DC.F_AUTORES_L") {
+    cp = eval(obj[0]);
+    if(!cp.disabled){
+         cp.focus();
+    }
+  }
+  return;
+}
+function estilopadrao(e) {
+  if (styleok) {
+    for (i=0; i <= e-1; i++) {
+
+      nmecampo= obj_old[i].toUpperCase();
+      if (nmecampo!="DC.F_AUTORES_PROD") {
+        cp=eval(obj_old[i]);
+        $(cp).removeClass("input-error");
+      //  cp.style.backgroundColor="#FFFFFF";
+      }
+    }
+  }
+  return;
+}
+
+function copiaArray(v1,v2){
+  for (var i=0; i < v1.length; i++) {
+    v2[i] = v1[i];
+  }
+  return;
+}
+
+// funcoes para fazer snapshot da pagina
+
+function pegaValor(_nomeC){
+   var vs="";
+   ob=eval("dc."+ _nomeC);
+   for (var ls=0; ls< ob.length; ls++) {
+     if (ob[ls].checked) {
+       vs=ob[ls].value;
+     break;
+    }
+  }
+    return vs;
+}
+
+function pegaTodosValores(_nome){
+ vl="";
+ obz=eval("dc." + _nome);
+ for (var j=0; j< obz.length; j++) {
+   vl+= obz[j].value;
+ }
+ return vl
+}
+
+function adicionaElemento (_nome, _tipo , _valor) {
+  nomelc=_nome.toLowerCase();
+  if (!((nomelc=="f_ctr")||(nomelc=="f_cod")||(nomelc=="f_seq")||
+  (nomelc=="f_autores_l")||(nomelc=="f_setor_l")||(nomelc=="f_area_l")||(nomelc=="f_plv_l")||
+  (nomelc=="f_autores_prod")||(nomelc=="f_setor_prod")||(nomelc=="f_area_prod")||(nomelc=="f_plv_prod") )) {
+    ctA++;
+    arNome[ctA]=_nome;
+    arTipo[ctA]=_tipo;
+    arValor[ctA]=_valor;
+  } else if ((nomelc=="f_autores_prod")||(nomelc=="f_setor_prod")||(nomelc=="f_area_prod")||(nomelc=="f_plv_prod") ) {
+    ctA++;
+    arNome[ctA]= _nome;
+    arTipo[ctA]=_tipo;
+    arValor[ctA]= pegaTodosValores(_nome);
+  }
+
+}
+
+function formSnapShot() {
+  var saida="";
+  var fim = dc.elements.length;
+
+  for (var i=0; i < fim; i++) {
+    nome=""; tipo=""; valor="";
+    tipo=dc.elements[i].type;
+    nome=dc.elements[i].name;
+
+    if ( (tipo == "text") || (tipo == "hidden") || (tipo == "textarea") ) {
+      valor=dc.elements[i].value;
+      adicionaElemento(nome, tipo, valor);
+
+    } else if (tipo == "select-one") {
+      valor=dc.elements[i][dc.elements[i].selectedIndex].value;
+      adicionaElemento(nome, tipo, valor);
+
+    } else if ((tipo == "radio") || (tipo == "checkbox")) {
+      valor=pegaValor(nome);
+      adicionaElemento(nome, tipo, valor);
+    }
+  }
+
+
+// for (var k=0; k<= ctA; k++){
+//   saida+=arNome[k] + "  " + arTipo[k] + "  " + arValor[k] + "\n";
+// }
+ alert("snapshot campos do formulário : \n\n" + saida);
+
+}
+
+function formModificado(){
+  var saida2 = "";
+  mudou=false;
+  for (var k=0; k<= ctA; k++){
+    objm = eval("dc." + arNome[k]);
+    objt = arTipo[k];
+    if (!((objt == "radio") || (objt == "checkbox"))) {
+      if ((arNome[k]=="f_autores_prod")||(arNome[k]=="f_setor_prod")||(arNome[k]=="f_area_prod")||(arNome[k]=="f_plv_prod")) {
+        if ((pegaTodosValores(arNome[k]))!=arValor[k] ){
+          mudou=true;
+          saida2+= "2 campo " + arNome[k] + " foi modificado : " + pegaTodosValores(arNome[k]) + " \n-> " + arValor[k] + "\n\n";
+          break;
+        }
+      } else if (objm.value != arValor[k]) {
+          mudou=true;
+          saida2+= "1 campo " + arNome[k] + " foi modificado : " + objm.value  + " \n-> " + arValor[k] + "\n\n";
+          break;
+      }
+    } else if ((pegaValor(arNome[k]))!=arValor[k] ){
+          mudou=true;
+          saida2+= "3 campo " + arNome[k] + " foi modificado : " + pegaValor(arNome[k]) + " \n-> " + arValor[k] + "\n\n";
+          break;
+    }
+  }
+//  if (!mudou) saida2="os dados nao foram modificados.";
+//  if (saida2!="") alert(saida2);
+  return mudou;
+}
+
+function v(endereco) {
+  if (formModificado()){
+    if (confirm("Foram realizadas modificações nesta página que ainda não foram gravadas\n e as mesmas serão descartadas.\n\nDeseja prosseguir?")) {
+//      fecha();
+      location=endereco;
+    }
+  } else {
+//      fecha();
+      location=endereco;
+  }
+  return;
+}
+
+function voltar() {
+  if (formModificado()){
+    if (confirm("Foram realizadas modificações nesta página que ainda não foram gravadas\n e as mesmas serão descartadas.\n\nDeseja prosseguir?")) {
+      cancelar();
+    }
+  } else {
+      cancelar();
+  }
+  return;
+}
+
+/*function alertBox(arg) {
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: arg,
+  classe:"alerta",
+  tipo:"alert"});
+  return;
+}
+
+function confirmBox(arg) {
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: arg,
+  classe:"alerta",
+  tipo:"confirm"});
+  return;
+}*/
+
+</script>
+
+<script>
+/*Define altura para tela_menor*/
+$(document).ready(function(){
+$(".controle").each(function(){
+$(".tela_menor").css("max-height","386px");
+});
+});
+</script>
+
+<script>
+/*Define altura para tela_menor*/
+$(document).ready(function(){
+$(".controle_peq").each(function(){
+$(".tela_menor").css("max-height","386px");
+});
+});
+</script>
+
+
+<script>
+//  dt=new Date();
+  y=2026
+  // ; // y=dt.getYear();
+  ab=1;
+//  y<=99 ?y+=1900 : y=y;
+  yn=1983
+</script>
+
+
+<script>
+ab=1;
+
+function checkVinc() {
+  if(!seleDominio){
+         dc.f_stavinc.selectedIndex=0;
+         return;
+  }
+  ps= dc.f_stavinc.selectedIndex;
+
+  vl=trim(dc.f_vinc.value.toUpperCase() );
+    if ((vl=="CELETISTA")||(vl=="SERVIDOR PÚBLICO")||(vl=="SERVIDOR PÚBLICO OU CELETISTA")){
+      dc.f_stavinc.selectedIndex=2;
+
+    } else if ((vl=="PROFESSOR VISITANTE")||(vl=="COLABORADOR")||(vl=="BOLSISTA")){
+      dc.f_stavinc.selectedIndex=1;
+    } else {
+       dc.f_stavinc.selectedIndex=1;
+    }
+  return;
+}
+
+function checkVinc2() {
+  vl=trim(dc.f_vinc.value.toUpperCase() );
+
+  if (vl!="") {
+    if (vl=="SERVIDOR PÚBLICO OU CELETISTA"){
+        return true;
+    }
+  }
+
+  return false;
+}
+
+function check(){
+  cte =0;
+  msg=new Array();
+
+  cg=trim(dc.f_carga.value);
+  ai=trim(dc.f_ano_ini.value); af=trim(dc.f_ano_fim.value);
+  mi=trim(dc.f_mes_ini.value); mf=trim(dc.f_mes_fim.value);
+  mi.length==1 ? mi="0"+mi : mi=mi;
+  mf.length==1 ? mf="0"+mf : mf=mf;
+  di=ai+mi; df=af+mf;
+
+
+  if (((i1=dc.f_cod_inst.value)=="")&&((i2=dc.f_cod_inst2.value)=="")){
+    if ((v=dc.f_instold.value)==""){
+       msg[cte] ="Campo Instituição obrigatório não informado.";
+      obj[cte++] = "dc.f_inst";
+    } else if (v!=""){
+             if ((v==i1)||(v==i2)||((i1=="")&&(i2==""))){
+                          msg[cte] = "Você escolheu a mesma instituição.  ";
+                          obj[cte++] = "dc.f_inst";
+             }
+    }
+  }
+
+
+
+  if (trim(dc.f_vinc.value)=="" && trim(dc.f_vinculo.value) ==""){
+       msg[cte] ="Campo Tipo do vínculo obrigatório não informado.";
+    obj[cte++] = "dc.f_vinc";
+  }
+
+  if (ai==""){
+       msg[cte] ="Campo Início obrigatório não informado.";
+    obj[cte++] = "dc.f_ano_ini";
+  }
+  if ((ai!="")&&(ai>y)){
+      msg[cte] = "Ano início não pode ser maior que ano atual.  ";
+    obj[cte++] = "dc.f_ano_ini";
+  }
+  if (parseInt(ai)<yn){
+      msg[cte] = "Ano início não pode ser menor que ano nascimento.  ";
+
+    obj[cte++] = "dc.f_ano_ini";
+  }
+  if ((mf!="")&&(af=="")){
+       msg[cte] ="Campo Fim obrigatório não informado.";
+    obj[cte++] = "dc.f_ano_fim";
+  }
+  if ((mi!="")&&((!e_Num(mi))||(mi<01)||(mi>12))){
+      msg[cte] = "Mês início inválido.  ";
+    obj[cte++] = "dc.f_mes_ini";
+  }
+  if ((ai!="")&& ((!e_Num(ai))||(ai.length<4)) ){
+      msg[cte] = "Ano início inválido. Ano não pode ser maior que ano atual e deve estar no formato 9999.  ";
+    obj[cte++] = "dc.f_ano_ini";
+  }
+  if ((mf!="")&&((!e_Num(mf))||(mf<01)||(mf>12))){
+      msg[cte] = "Mês fim inválido.  ";
+    obj[cte++] = "dc.f_mes_fim";
+  }
+  if ((af!="")&& ((!e_Num(af))||(af.length<4)) ){
+      msg[cte] = "Ano fim inválido. Ano deve estar no formato 9999.  ";
+      obj[cte++] = "dc.f_ano_fim";
+  }
+  if ((di!="")&&(df!="")&&(parseInt(df)<parseInt(di))){
+      msg[cte] = "Data de início deve ser menor que data fim.  ";
+    obj[cte++] = "dc.f_ano_ini";
+  }
+  if ((dc.f_status[1].checked)&&(af=="")){
+       msg[cte] ="Campo Fim obrigatório não informado.";
+    obj[cte++] = "dc.f_ano_fim";
+  }
+  if ((dc.f_status[0].checked)&&((af!="")||(mf!=""))){
+      msg[cte] = "Não informe ano fim se o status do período for atual.  ";
+    obj[cte++] = "dc.f_ano_fim";
+  }
+  if (trim(dc.f_enqua.value)==""){
+       msg[cte] ="Campo Enquadramento funcional obrigatório não informado.";
+    obj[cte++] = "dc.f_enqua";
+  }
+  if ( dc.f_stavinc.options[dc.f_stavinc.options.selectedIndex].value==""){
+      msg[cte] ="Campo Vínculo obrigatório não informado.";
+    obj[cte++] = "dc.f_stavinc[0]";
+  }
+  if ((cg!="")&&(!e_Num(cg))){
+      msg[cte] = "Carga horária inválida.  ";
+    obj[cte++] = "dc.f_carga";
+  }
+  if (checkVinc2()) {
+      msg[cte] = "\nServidores públicos (estatutários ou não) ou Celetistas\n(de instituições não públicas) devem selecionar novamente\n o tipo de vínculo, indicando uma das duas alternativas.  ";
+    obj[cte++] = "dc.f_vinc";
+  }
+  if (cte > 0) {
+   alerta(cte);
+  } else {
+    dc.f_status.value="";
+    checkVinc() ;
+    verificaPriv();
+    //enviar();
+  }
+}
+function verificaPriv() {
+  if ($("[name=f_tipo_privacidade]").val() == 2) {
+    alert("É necessário que pelo menos um vínculo tenha visibilidade Público.\nEste vínculo foi alterado para Público.");
+    $("[name=f_tipo_privacidade]").val(1);
+    enviar();
+  }
+  else {
+    enviar();
+  }
+}
+function fecha(){
+  return;
+}
+function enviar(){
+  fecha();
+  dc.submit();
+  return true;
+}
+function cancelar(){
+  fecha();
+  dc.f_ctr.value="V"; enviar();
+  return true;
+}
+function del(){
+     if (confirm("\n\n Deseja realmente excluir este vínculo?   \n\n")){
+    dc.f_ctr.value="E";
+    fecha();
+    enviar();
+  }
+}
+
+function sele(txt){
+if(txt!="Outro") {
+
+  dc.f_vinc.value=txt;
+  dc.f_vinculo.value=txt;
+  dc.f_vinc.disabled=true;
+}else {
+  dc.f_vinc.disabled=false;
+  dc.f_vinc.value="";
+  dc.f_vinculo.value="";
+
+}
+servidor()
+  dc.f_vinc.focus();
+  return true;
+}
+
+
+
+var seleDominio = false;
+function dominio(){
+  exibeMsgOutros = true;
+  seleDominio  = true;
+  self.parent.caixaMsg.exibir({
+  titulo:"&nbsp;"
+ ,conteudo:"Vínculo"
+ ,fnConfirmar:"modalCV2.getDocument().sele(this.combo.value)"
+ ,tipo:"combo"
+ ,dados:[
+ ["Servidor público","Servidor público"],
+ ["Celetista","Celetista"],
+ ["Professor Visitante","Professor Visitante"],
+ ["Bolsista","Bolsista"],
+ ["Outro (especifique)","Outro"]
+ ]});
+ }
+
+
+
+
+</script>
+
+
+
+<style>
+  .imagemOculta{display: none;cursor: pointer;}
+</style>
+
+
+<em titulo="Vínculo">
+Vínculo
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+<table border="0" width="560">
+<tbody><tr><td colspan="2">Tipo do vínculo<br>
+<input type="text" class="input-lupa" name="f_vinc" disabled="true" value="" size="65" maxlength="30">
+<a title="Clique aqui para selecionar o vínculo" onclick="dominio()" class="lupa" href="#"></a>
+</td></tr><tr><td colspan="2">Possui vínculo empregatício<br>
+
+  <select name="f_stavinc" onchange="checkVinc();" readonly="readonly" style="background: rgb(240, 240, 240);">
+  <option value=""></option>
+ <option value="0">Não</option>
+  <option value="1">Sim</option>
+  </select>
+  <br><br>
+  
+</td></tr><tr><td colspan="2">Enquadramento funcional<br>
+<input type="text" class="input-lupa" name="f_enqua" value="" size="65" maxlength="45">
+
+</td></tr><tr><td>
+Carga horária semanal<br>
+<input type="text" name="f_carga" size="3" maxlength="3">
+<br>
+</td></tr><tr><td><input type="checkbox" value="3" name="f_regime">Dedicação exclusiva
+</td></tr></tbody></table>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+<em titulo="Período">
+Período
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+
+  <style>
+  table.vinculo td {padding:0; text-align:left; vertical-align:top}
+  table.vinculo tr.paddingBottom td {padding-bottom:10px}
+  table.vinculo input {text-align:center}
+  </style>
+<table class="vinculo" cellspacing="0" cellpadding="0"><tbody>
+
+  <tr>
+      <td style="width: 41px; vertical-align: middle;"><b>Início:</b></td>
+      <td style="width:10px">
+      Mês<br>
+      <input type="text" size="2" maxlength="2" name="f_mes_ini" value="
+"></td>
+<td>
+        Ano<br>
+        <input type="text" size="2" maxlength="4" name="f_ano_ini" value="
+"></td><td>&nbsp;</td></tr>
+</tbody></table>
+        <table>
+  <tbody><tr class="paddingBottom">
+      <td style="width: 145px;">
+          <input type="radio" value="S" name="f_status" checked=""><b>Atual (não finalizado)</b></td><td>
+<input type="radio" value="N" name="f_status"><b>Anterior (finalizado)</b></td>
+</tr></tbody></table>
+        <table>
+  <tbody><tr id="periodoFim" style="display:none">
+  <td style="width: 32px;"><b>Fim:</b></td>
+      <td style="width: 0px;">Mês<br><input type="text" size="2" maxlength="2" name="f_mes_fim" value="
+"></td>
+  <td>
+  Ano<br>
+      <input type="text" size="2" maxlength="4" name="f_ano_fim" value="
+"></td><td>&nbsp;</td></tr></tbody><tbody></tbody></table>
+<script>
+
+  function togglePeriodoFim(e) {
+    var item = $(e.currentTarget),
+        val = item.val(),
+        row = $("#periodoFim");
+
+    if (val == "N") {
+       row.show()
+    } else {
+       dc.f_mes_fim.value = "";
+       dc.f_ano_fim.value = "";
+       row.hide();
+    }
+
+  };
+
+  function toggleLblPeriodoFim(e) {
+    var item = $(e.currentTarget),
+        val = item.val(),
+        row = $("#lblPeriodoFim");
+
+    if (val == "N") {
+       row.show()
+    } else {
+       row.hide();
+    }
+
+  };
+
+  $(":input[name=f_status]").bind("change", togglePeriodoFim);
+  $(":input[name=f_status]").bind("change", toggleLblPeriodoFim);
+
+  </script>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+<em titulo="Outras informaç...">
+Outras informações
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+<textarea name="f_outras_inf" maxlength="3950" cols="85" rows="10" wrap="soft"></textarea><br>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+<em titulo="Visibilidade">
+Visibilidade
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+
+      <link rel="stylesheet" type="text/css" href="/images/estatico/css/dd.min.css">
+      <script src="/images/estatico/js/dd.min.js"></script>
+      <span>Controle quem pode visualizar estas informaçoes ao definir sua visibilidade. A visibilidade padrão é definida como Público.</span>
+      <br><br>
+<img src="/images/estatico/imagens/Icone-Publico.png" width="16px"><span>&nbsp;&nbsp;Público: As informações serão exibidas na consulta pública.</span><br>
+<img src="/images/estatico/imagens/Icone-Privado.png" width="16px"><span>&nbsp;&nbsp;Privado: As informações não serão exibidas na consulta pública.</span><br>
+
+      <br>
+      <select name="" is="ms-dropdown" width="150px" tabindex="-1" style="display: none;">
+    
+<option data-image="/images/estatico/imagens/Icone-Publico.png" value="1">Público</option>
+<option data-image="/images/estatico/imagens/Icone-Privado.png" value="2">Privado</option>
+
+      </select><div tabindex="0" class="ms-dd ms-pr" style=""><input tabindex="-1" name="f_tipo_privacidade" type="text" class="ms-value-input"><div class="more" style="display: none;"></div><div class="ms-dd-header" style="min-height: 0px;"><a class="ms-list-option option-selected" style="display: block;"><span class="ms-dd-arrow ms-dd-pointer-down"></span><span class="ms-header-middle-content"><span class="ms-middle"><img class="ms-dd-option-image" src="/images/estatico/imagens/Icone-Publico.png"><span class="ms-dd-option-content"><span class="ms-dd-label">Público</span><span class="ms-dd-desc"></span></span></span></span></a><div class="ms-filter-box" style="display: none;"><input type="text"></div></div><ul class="ms-options" style="display: none;"><li class="ms-list-option enabled option-selected" data-ms-index="0"><span class="ms-middle"><img class="ms-dd-option-image" src="/images/estatico/imagens/Icone-Publico.png"><span class="ms-dd-option-content"><span class="ms-dd-label">Público</span><span class="ms-dd-desc"></span></span></span></li><li class="ms-list-option enabled" data-ms-index="1"><span class="ms-middle"><img class="ms-dd-option-image" src="/images/estatico/imagens/Icone-Privado.png"><span class="ms-dd-option-content"><span class="ms-dd-label">Privado</span><span class="ms-dd-desc"></span></span></span></li></ul><div style="clear: both;"></div></div>
+      <script>
+        $("[name=f_tipo_privacidade]").val("1");
+        var valorPriv = "1";
+      </script>
+    
+<br><br><br><br><br>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+</div></div></fieldset>
+<input type="hidden" name="f_ctr" value="I">
+<input type="hidden" name="f_cod" value="K1237839P9">
+<input type="hidden" name="f_codinst" value="">
+<input type="hidden" name="f_seq_ativ" value="">
+<input type="hidden" name="f_seq_hist" value="">
+<div class="controle">
+<span class="botao salvar">
+                  <a href="javascript:void(0)" onclick="check();return false;">
+                  <span></span>Salvar</a>
+               </span>
+</div>
+
+<script>
+  self.parent.veriHelp("ATUACAO_PROFISSIONAL");
+  </script>
+
+</div></form></body></html>

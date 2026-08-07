@@ -1,0 +1,1422 @@
+{
+  "formacao_academica": {
+    "module": {
+      "id": "formacao_academica",
+      "name": "Formação acadêmica/titulação",
+      "category": "Formação",
+      "type": "crud-list",
+      "route": "pkg_formacao.lista?f_tipo=FA"
+    },
+    "list": {
+      "recordCount": 1,
+      "records": [
+        {
+          "index": 0,
+          "text": "1\n   \n2012... 2016\nGraduação\nFaculdade Estácio de São Luis",
+          "details": "onclick: self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo"
+        }
+      ],
+      "newButtonOnclick": "selecionarNivel();",
+      "editRowOnclick": "self.parent.modalCV2.setarUrl('pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo=FA',true);"
+    },
+    "errors": [],
+    "newForm": {
+      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=K1237839P9&f_tipo=FA&f_nivel=4",
+      "fields": [
+        {
+          "label": "Instituição",
+          "name": "f_inst",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Curso",
+          "name": "f_curso",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Início (ano)",
+          "name": "f_ano_ini",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Conclusão (ano)",
+          "name": "f_ano_fim",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Obtenção do título (mês/ano)",
+          "name": "f_mes_obten",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Obtenção do título (mês/ano)",
+          "name": "f_ano_obten",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Agência financiadora",
+          "name": "f_nme_agencia",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Título da dissertação/tese",
+          "name": "f_titulo",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Nome completo do orientador",
+          "name": "f_orient",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Nome completo do coorientador",
+          "name": "f_coorient",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "f orient dout",
+          "name": "f_orient_dout",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "f inst dout",
+          "name": "f_inst_dout",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Duração em meses",
+          "name": "f_meses_sw",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Orientador",
+          "name": "f_orient_dout_sw",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Instituição",
+          "name": "f_inst_dout_sw",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Duração em meses",
+          "name": "f_meses_sw_aux",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Orientador",
+          "name": "f_orient_dout_ct",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Instituição",
+          "name": "f_inst_dout_ct",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Listar todos|Incluir nova",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Listar todos|Incluir nova",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Listar todos",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "f tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Controle quem pode visualizar",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "select",
+          "options": [
+            "1|Público",
+            "2|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "custom-select",
+          "options": [
+            "1|Público",
+            "1|Público",
+            "0|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "f tpo doutorado",
+          "name": "f_tpo_doutorado",
+          "type": "radio",
+          "options": [
+            "N|normal",
+            "S|sanduíche",
+            "C|co-tutela",
+            "CS|co-tutela/sanduíche"
+          ],
+          "required": false
+        },
+        {
+          "label": "F STATUS",
+          "name": "F_STATUS",
+          "type": "radio",
+          "options": [
+            "N|em andamento",
+            "S|concluído",
+            "I|incompleto"
+          ],
+          "required": false
+        },
+        {
+          "label": "F BOLSA",
+          "name": "F_BOLSA",
+          "type": "radio",
+          "options": [
+            "S|Sim",
+            "N|Não"
+          ],
+          "required": false
+        }
+      ],
+      "sections": [
+        "Dados Gerais",
+        "Período",
+        "Bolsa",
+        "Detalhamento",
+        "Palavras-chave",
+        "Áreas",
+        "Setores",
+        "Visibilidade",
+        "Ajuda",
+        "Listar todos",
+        "Incluir nova",
+        "Listar todos",
+        "Incluir nova",
+        "Listar todos",
+        "Público",
+        "Salvar"
+      ]
+    },
+    "editForm": {
+      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_formacao.form?f_cod=K1237839P9&f_seq=1&f_tipo=FA",
+      "fields": [
+        {
+          "label": "Instituição",
+          "name": "f_inst",
+          "type": "text_disabled",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Curso",
+          "name": "f_curso",
+          "type": "text_disabled",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Início (ano)",
+          "name": "f_ano_ini",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Conclusão (ano)",
+          "name": "f_ano_fim",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Agência financiadora",
+          "name": "f_nme_agencia",
+          "type": "text_disabled",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Título monografia",
+          "name": "f_titulo",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Nome completo do orientador",
+          "name": "f_orient",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "f orient dout",
+          "name": "f_orient_dout",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "f inst dout",
+          "name": "f_inst_dout",
+          "type": "text_disabled",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Duração em meses",
+          "name": "f_meses_sw",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Orientador",
+          "name": "f_orient_dout_sw",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Instituição",
+          "name": "f_inst_dout_sw",
+          "type": "text_disabled",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Duração em meses",
+          "name": "f_meses_sw_aux",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Orientador",
+          "name": "f_orient_dout_ct",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Instituição",
+          "name": "f_inst_dout_ct",
+          "type": "text_disabled",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "f tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "Controle quem pode visualizar",
+          "type": "text",
+          "options": [],
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "select",
+          "options": [
+            "1|Público",
+            "2|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "custom-select",
+          "options": [
+            "1|Público",
+            "1|Público",
+            "0|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "f tpo doutorado",
+          "name": "f_tpo_doutorado",
+          "type": "radio",
+          "options": [
+            "N|normal",
+            "S|sanduíche"
+          ],
+          "required": false
+        },
+        {
+          "label": "F STATUS",
+          "name": "F_STATUS",
+          "type": "radio",
+          "options": [
+            "N|em andamento",
+            "S|concluído",
+            "I|incompleto"
+          ],
+          "required": false
+        },
+        {
+          "label": "F BOLSA",
+          "name": "F_BOLSA",
+          "type": "radio",
+          "options": [
+            "S|Sim",
+            "N|Não"
+          ],
+          "required": false
+        }
+      ]
+    }
+  },
+  "atuacao_profissional": {
+    "module": {
+      "id": "atuacao_profissional",
+      "name": "Atuação profissional",
+      "category": "Atuação",
+      "type": "crud-list",
+      "route": "pkg_ativ.lista"
+    },
+    "list": {
+      "recordCount": 0,
+      "records": [],
+      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_ATIV.inclui?f_cod=K1237839P9',true);"
+    },
+    "errors": [],
+    "newForm": {
+      "url": "dialog:",
+      "fields": [],
+      "sections": []
+    }
+  },
+  "projetos_pesquisa": {
+    "module": {
+      "id": "projetos_pesquisa",
+      "name": "Projetos de pesquisa",
+      "category": "Projetos",
+      "type": "crud-list",
+      "route": "pkg_projeto.lista?f_cod_tipo=P"
+    },
+    "list": {
+      "recordCount": 0,
+      "records": [],
+      "newButtonOnclick": "self.parent.modalCV2.setarUrl('PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=K1237839P9',true);"
+    },
+    "errors": [],
+    "newForm": {
+      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_PROJETO.form?f_tpo_cooperacao=X&f_tpo_acao_inov=X&f_tematica=X&F_sta_inovacao=&f_cod_tipo=P&f_cod=K1237839P9",
+      "fields": [
+        {
+          "label": "Nome do projeto",
+          "name": "f_titulo",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Ano início",
+          "name": "F_ANO_INIC",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Ano fim",
+          "name": "F_ANO_FIM",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "CNPJ da empresa",
+          "name": "f_cnpj_empresa",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Nome da empresa",
+          "name": "f_txt_nme_empresa",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "E-mail Institucional",
+          "name": "f_txt_email_institucional",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Setor",
+          "name": "f_txt_setor",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Qual o potencial de inovação d",
+          "name": "f_txt_potencial",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Instituição de execução",
+          "name": "f_inst",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Órgão/Unidade",
+          "name": "f_orgao",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Listar todos|Incluir novo",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Listar todas|Incluir nova",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Selecionar|Incluir nova",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Graduação",
+          "name": "F_NRO_GRADUACAO",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Especialização",
+          "name": "F_NRO_ESPECIALIZACAO",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Mestrado acadêmico",
+          "name": "F_NRO_MESTRADO_ACAD",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Mestrado profissionalizante",
+          "name": "F_NRO_MESTRADO_PROF",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Doutorado",
+          "name": "F_NRO_DOUTORADO",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Project Name",
+          "name": "f_titulo_en",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "f tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Controle quem pode visualizar",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Preencha o campo abaixo com Nome, Sigla ou parte do Nome da Instituição/Sociedade Científica e clique na imagem da lupa para pesquisar",
+          "name": "f_nome",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Nome da instituição",
+          "name": "f_nme_inst",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Sigla",
+          "name": "f_sigla",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Descrição",
+          "name": "f_ref",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "label": "Description",
+          "name": "f_ref_en",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "label": "F TPO NATUREZA",
+          "name": "F_TPO_NATUREZA",
+          "type": "select",
+          "options": [
+            "|",
+            "D|Desenvolvimento",
+            "E|Extensão",
+            "P|Pesquisa",
+            "N|Ensino",
+            "O|Outra"
+          ],
+          "required": false
+        },
+        {
+          "label": "F TPO SITUACAO",
+          "name": "F_TPO_SITUACAO",
+          "type": "select",
+          "options": [
+            "|",
+            "D|Desativado",
+            "C|Concluído",
+            "A|Em andamento"
+          ],
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "select",
+          "options": [
+            "1|Público",
+            "2|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "pais inst",
+          "name": "f_pais_inst",
+          "type": "select",
+          "options": [
+            "|",
+            "RFA|Alemanha",
+            "ARG|Argentina",
+            "AUS|Austrália",
+            "BRA|Brasil",
+            "CAN|Canadá",
+            "ESP|Espanha",
+            "EUA|Estados Unidos",
+            "FRA|França",
+            "GBR|Grã-Bretanha",
+            "HOL|Holanda",
+            "ING|Inglaterra",
+            "ITA|Itália",
+            "POR|Portugal",
+            "AFG|Afeganistão",
+            "AFS|África Do Sul",
+            "ALB|Albânia",
+            "AND|Andorra",
+            "ANG|Angola",
+            "ATC|Antartida",
+            "ANB|Antigua",
+            "AHL|Antilhas Holandesas",
+            "ARA|Arábia Saudita",
+            "ARL|Argélia",
+            "ARM|Armênia",
+            "ABW|Aruba",
+            "AUT|Austria",
+            "AZE|Azerbaijão",
+            "BHS|Bahamas",
+            "BGD|Bangladesh",
+            "BRB|Barbados",
+            "BAR|Barein",
+            "BEA|Belarus",
+            "BEL|Bélgica",
+            "BLZ|Belize",
+            "BEN|Benin",
+            "BER|Bermudas",
+            "BIR|Birmânia",
+            "BOL|Bolívia",
+            "BOS|Bósnia",
+            "BOT|Botsuana",
+            "IOT|Britsh Indian Ocean",
+            "BRN|Brunei",
+            "BUL|Bulgária",
+            "BKF|Burkina Fasso",
+            "BUR|Burundi",
+            "BUT|Butão",
+            "CBV|Cabo Verde",
+            "CAM|Camarões",
+            "CBJ|Camboja",
+            "CAT|Catar",
+            "CAZ|Cazaquistão",
+            "CHA|Chade",
+            "CHL|Chile",
+            "CHN|China",
+            "CHP|Chipre",
+            "CXR|Christmas Island",
+            "CIN|Cingapura",
+            "COL|Colômbia",
+            "COM|Comores",
+            "CON|Congo",
+            "CRN|Coréia Do Norte",
+            "CRS|Coréia Do Sul",
+            "CMF|Costa Do Marfim",
+            "CRC|Costa Rica",
+            "CRO|Croácia",
+            "CUB|Cuba",
+            "DIN|Dinamarca",
+            "DJI|Djibuti",
+            "DON|Dominica",
+            "EGI|Egito",
+            "ELS|El Salvador",
+            "EAU|Emirados Árabes",
+            "EQU|Equador",
+            "ERT|Eritréa",
+            "ESC|Escócia",
+            "SVK|Eslováquia",
+            "SVN|Eslovênia",
+            "EST|Estônia",
+            "ETP|Etiópia",
+            "FJI|Fiji",
+            "FIL|Filipinas",
+            "FIN|Finlândia",
+            "FOR|Formosa",
+            "GAB|Gabão",
+            "GAL|Gales",
+            "GAM|Gâmbia",
+            "GAN|Gana",
+            "GEO|Geórgia",
+            "GIB|Gibraltar",
+            "GRD|Granada",
+            "GRE|Grécia",
+            "GRL|Groênlandia",
+            "GDL|Guadalupe",
+            "GUM|Guam",
+            "GUA|Guatemala",
+            "GUI|Guiana",
+            "GFR|Guiana Francesa",
+            "GNE|Guiné",
+            "GNB|Guiné Bissau",
+            "GNQ|Guiné Equatorial",
+            "HTI|Haiti",
+            "HON|Honduras",
+            "HKG|Hong Kong",
+            "HUN|Hungria",
+            "IEM|Iêmem",
+            "IMS|Iêmen Do Sul",
+            "CYM|Ilhas Cayman",
+            "CCK|Ilhas Cocos",
+            "COK|Ilhas Cook",
+            "FLK|Ilhas Falkland",
+            "IFA|Ilhas Faroe",
+            "IMH|Ilhas Marshall",
+            "MID|Ilhas Midway",
+            "NFK|Ilhas Norfolk",
+            "SLB|Ilhas Salomão",
+            "SHN|Ilhas Santa Helena",
+            "TCA|Ilhas Turcas Caicos",
+            "IVA|Ilhas Vírgens Eua",
+            "VGB|Ilhas Vírgens Gbr",
+            "WAK|Ilhas Wake",
+            "WLF|Ilhas Wallis Futuna",
+            "IND|Índia",
+            "IDN|Indonésia",
+            "IRA|Irã",
+            "IRQ|Iraque",
+            "IRL|Irlanda",
+            "IRN|Irlanda Do Norte",
+            "ISL|Islândia",
+            "ISR|Israel",
+            "IUG|Iugoslávia",
+            "JAM|Jamaica",
+            "JAP|Japão",
+            "JOR|Jordânia",
+            "KIR|Kiribati",
+            "KWT|Kuweit",
+            "LAO|Laos",
+            "LES|Lesoto",
+            "LET|Letônia",
+            "LBN|Líbano",
+            "LBR|Libéria",
+            "LIB|Líbia",
+            "LIE|Liechtenstein",
+            "LIT|Lituânia",
+            "LUX|Luxemburgo",
+            "MAC|Macau",
+            "MCD|Macedônia",
+            "MAD|Madagascar",
+            "MAL|Malásia",
+            "MLV|Malavi",
+            "MDV|Maldivas",
+            "MLI|Mali",
+            "MLT|Malta",
+            "MAR|Marrocos",
+            "MRT|Martinica",
+            "MAU|Maurício",
+            "MTN|Mauritânia",
+            "MEX|México",
+            "MMR|Mianmar",
+            "FSM|Micronésia",
+            "MBQ|Moçambique",
+            "MOL|Moldova",
+            "MON|Mônaco",
+            "MGL|Mongólia",
+            "MNE|Montenegro",
+            "MSR|Montserrat",
+            "NAM|Namíbia",
+            "NRU|Nauru",
+            "NPL|Nepal",
+            "NIC|Nicarágua",
+            "NIG|Niger",
+            "NGA|Nigéria",
+            "NIU|Niue",
+            "NOR|Noruega",
+            "NCL|Nova Caledônia",
+            "NZL|Nova Zelândia",
+            "OMA|Omã",
+            "PCI|Pacific Islands",
+            "PLU|Palau",
+            "PSE|Palestina",
+            "PAN|Panamá",
+            "PNG|Papua Nova Guiné",
+            "PAQ|Paquistão",
+            "PRG|Paraguai",
+            "PER|Peru",
+            "PCN|Pitcairn",
+            "PLF|Polinésia Francesa",
+            "POL|Polônia",
+            "PTR|Porto Rico",
+            "QUE|Quênia",
+            "QUI|Quirgistão",
+            "COD|Rd Congo",
+            "RCA|Rep.Centro-Africana",
+            "DOM|República Dominicana",
+            "TCH|República Tcheca",
+            "RTC|República Tcheca",
+            "REU|Reunião",
+            "ROM|Romênia",
+            "RUA|Ruanda",
+            "RSS|Rússia",
+            "ASM|Samoa Americana",
+            "SAM|Samoa Ocidental",
+            "SMR|San Marino",
+            "LCA|Santa Lúcia",
+            "KNA|São Cristóvão Nevis",
+            "SPM|São Pedro Miquelon",
+            "STP|São Tomé E Príncipe",
+            "VCT|São Vicente Granadi",
+            "SEN|Senegal",
+            "SRL|Serra Leoa",
+            "RS|Sérvia",
+            "SYC|Seychelles",
+            "SIR|Síria",
+            "SOM|Somália",
+            "SRI|Sri Lanka",
+            "SUA|Suazilândia",
+            "SUD|Sudão",
+            "SUE|Suécia",
+            "SUI|Suíça",
+            "SUR|Suriname",
+            "TAD|Tadjaquistão",
+            "TAI|Tailândia",
+            "TAN|Tanzânia",
+            "TMP|Timor Leste",
+            "TGO|Togo",
+            "TKL|Tokelau",
+            "TON|Tonga",
+            "TRT|Trinidad E Tobago",
+            "TUN|Tunísia",
+            "TUC|Turcomenistão",
+            "TUR|Turquia",
+            "TUV|Tuvalu",
+            "UCR|Ucrânia",
+            "UGA|Uganda",
+            "URS|União Soviética",
+            "URU|Uruguai",
+            "UZB|Uzbekistan",
+            "VUT|Vanuatu",
+            "VAT|Vaticano",
+            "VEN|Venezuela",
+            "VTN|Vietnã",
+            "ESH|Western Sahara",
+            "ZAR|Zaire",
+            "ZAN|Zâmbia",
+            "ZIN|Zimbabue"
+          ],
+          "required": false
+        },
+        {
+          "label": "uf",
+          "name": "f_uf",
+          "type": "select",
+          "options": [
+            "|",
+            "AC|AC",
+            "AL|AL",
+            "AM|AM",
+            "AP|AP",
+            "BA|BA",
+            "CE|CE",
+            "DF|DF",
+            "ES|ES",
+            "GO|GO",
+            "MA|MA",
+            "MG|MG",
+            "MS|MS",
+            "MT|MT",
+            "PA|PA",
+            "PB|PB",
+            "PE|PE",
+            "PI|PI",
+            "PR|PR",
+            "RJ|RJ",
+            "RN|RN",
+            "RO|RO",
+            "RR|RR",
+            "RS|RS",
+            "SC|SC",
+            "SE|SE",
+            "SP|SP",
+            "TO|TO"
+          ],
+          "required": false
+        },
+        {
+          "label": "tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "custom-select",
+          "options": [
+            "1|Público",
+            "1|Público",
+            "0|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "f tpo pesq emp",
+          "name": "f_tpo_pesq_emp",
+          "type": "radio",
+          "options": [
+            "S|Não",
+            "N|"
+          ],
+          "required": false
+        },
+        {
+          "label": "f sta inovacao",
+          "name": "f_sta_inovacao",
+          "type": "radio",
+          "options": [
+            "S|Não",
+            "N|"
+          ],
+          "required": false
+        }
+      ],
+      "sections": [
+        "Dados gerais",
+        "Equipe",
+        "Instituição de ...",
+        "Produção C & T",
+        "Orientações",
+        "Traduções",
+        "Visibilidade",
+        "Ajuda",
+        "Listar todos",
+        "Incluir novo",
+        "Listar todas",
+        "Incluir nova",
+        "Selecionar",
+        "Incluir nova",
+        "Clique aqui para repetir os textos já informados",
+        "Público",
+        "Salvar",
+        "Confirmar"
+      ]
+    }
+  },
+  "artigos_publicados": {
+    "module": {
+      "id": "artigos_publicados",
+      "name": "Artigos completos publicados em periódicos",
+      "category": "Produções",
+      "type": "crud-list",
+      "route": "pkg_artigo.lista"
+    },
+    "list": {
+      "recordCount": 0,
+      "records": [],
+      "newButtonOnclick": "informaDOI();"
+    },
+    "errors": [],
+    "newForm": {
+      "url": "https://wwws.cnpq.br/cvlattesweb/PKG_ARTIGO.form?f_sta_divulgacao_cientifica=&F_COD_DOI=10.1234%2Ftest.2024&F_CTR=D&F_COD=K1237839P9",
+      "fields": [
+        {
+          "label": "Informe o Digital Object Ident",
+          "name": "f_cod_doi",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Título",
+          "name": "f_titulo",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Ano",
+          "name": "f_ano",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Home page do trabalho (URL)",
+          "name": "f_homepage",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Título do periódico/revista em",
+          "name": "f_titulo_periodico",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "Fator de Impacto(JCR)",
+          "name": "f_jcr",
+          "type": "text_disabled",
+          "required": false
+        },
+        {
+          "label": "ISSN",
+          "name": "f_issn",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Volume",
+          "name": "f_volume",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Série",
+          "name": "f_serie",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Página inicial/ Número artigo",
+          "name": "f_pag_ini",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Página final",
+          "name": "f_pag_fim",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Listar todos|Incluir novo",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Listar todos|Incluir nova",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Listar todos|Incluir nova",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Listar todos",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Title",
+          "name": "f_titulo_en",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "f tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "Controle quem pode visualizar",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "text",
+          "required": false
+        },
+        {
+          "label": "f ref",
+          "name": "f_ref",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "label": "Other information",
+          "name": "f_ref_en",
+          "type": "textarea",
+          "required": false
+        },
+        {
+          "label": "F IDIOMA",
+          "name": "F_IDIOMA",
+          "type": "select",
+          "options": [
+            "DE|Alemão",
+            "ES|Espanhol",
+            "FR|Francês",
+            "EN|Inglês",
+            "IT|Italiano",
+            "LB|Libras",
+            "PT|Português",
+            "AB|Abhkazian",
+            "AA|Afar",
+            "AF|Afrikaans",
+            "AY|Aimara",
+            "SQ|Albanês",
+            "AM|Amarico",
+            "AR|Árabe",
+            "AN|Armênio",
+            "AS|Assames",
+            "AZ|Azerbaidjano",
+            "BC|Baluchi",
+            "EU|Basco",
+            "BA|Bashquir",
+            "BN|Bengali",
+            "BB|Berbere",
+            "BE|Bielo-Russo",
+            "BH|Bihari",
+            "BM|Birmanês",
+            "BI|Bislama",
+            "BR|Bretão",
+            "BG|Búlgaro",
+            "CB|Cabie",
+            "KS|Cachemiriano",
+            "KM|Cambodjano",
+            "KN|Canadá",
+            "KK|Casaque",
+            "CA|Catalão",
+            "ZH|Chinês",
+            "SI|Cingalês",
+            "KO|Coreano",
+            "CO|Corsico",
+            "CR|Crioulo",
+            "HR|Croata",
+            "KU|Curdo",
+            "DA|Dinamarquês",
+            "DI|Divehi",
+            "DZ|Dzongka",
+            "FY|Erisão",
+            "SK|Eslovaco",
+            "SL|Esloveno",
+            "EO|Esperanto",
+            "ET|Estoniano",
+            "EE|Eue",
+            "FO|Feróico",
+            "FJ|Fijiano",
+            "FL|Filipino",
+            "FI|Finlandês",
+            "GD|Gaelico Escocês",
+            "GL|Galego",
+            "CY|Galês",
+            "KA|Georgiano",
+            "EL|Grego",
+            "KL|Groenlandês",
+            "GN|Guarani",
+            "GU|Gujarati",
+            "HY|Harmênio",
+            "HA|Hausa",
+            "IW|Hebraico",
+            "HI|Hindi",
+            "NL|Holandês",
+            "HU|Húngaro",
+            "JI|Iidiche",
+            "IN|Indonésio",
+            "IA|Interlíngua",
+            "IE|Interlíngue",
+            "IK|Inupiak",
+            "ID|Ioma",
+            "GA|Irlandês",
+            "IS|Islandês",
+            "JA|Japonês",
+            "JV|Javanês",
+            "LO|Laosiano",
+            "LP|Lapão",
+            "LA|Latim",
+            "LV|Letão",
+            "LN|Lingála",
+            "LT|Lituano",
+            "LX|Luxemburguês",
+            "MK|Macedônio",
+            "ML|Malaiala",
+            "MS|Malaio",
+            "MG|Malgaxe",
+            "MT|Maltês",
+            "MA|Mandingo",
+            "MI|Maori",
+            "MR|Maratí",
+            "MO|Moldavio",
+            "MN|Mongol",
+            "NA|Nauruano",
+            "NE|Nepali",
+            "NO|Norueguês",
+            "OR|Oria",
+            "OM|Oromo",
+            "FA|Persa",
+            "PL|Polonês",
+            "PA|Punjabi",
+            "PS|Pushto",
+            "QU|Quichua",
+            "RW|Quiniaruanda",
+            "KY|Quirquiz",
+            "RN|Quirundi",
+            "QI|Quisuahili",
+            "RM|Reto-Romano",
+            "RO|Romeno",
+            "RU|Russo",
+            "SM|Samoano",
+            "SG|Sango",
+            "SA|Sanscrito",
+            "SR|Serbian",
+            "SH|Servo-Croata",
+            "ST|Sesoto",
+            "TN|Setsuana",
+            "SN|Shona",
+            "SD|Sindi",
+            "MY|Sirmanês",
+            "SS|Sisvati",
+            "SO|Somali",
+            "SW|Suaili",
+            "SU|Sudanês",
+            "SV|Sueco",
+            "TG|Tadjique",
+            "TH|Tai",
+            "TL|Talagog",
+            "TA|Tamil",
+            "TT|Tatar",
+            "CS|Tcheco",
+            "TE|Telugo",
+            "BO|Tibetano",
+            "TI|Tigrina",
+            "TO|Tongalês",
+            "TS|Tsonga",
+            "TW|Tui",
+            "TR|Turco",
+            "TK|Turcomano",
+            "TU|Tuvaloano",
+            "UK|Ucraniâno",
+            "UR|Urdu",
+            "UZ|Uzbeco",
+            "VI|Vietnamita",
+            "VO|Volupak",
+            "WO|Wolof",
+            "XH|Xosa",
+            "YO|Yoruba",
+            "ZU|Zulú",
+            "OU|Outros"
+          ],
+          "required": false
+        },
+        {
+          "label": "meio",
+          "name": "f_meio",
+          "type": "select",
+          "options": [
+            "|",
+            "I|Impresso",
+            "D|meio digital",
+            "V|Impresso e mídia eletrônica"
+          ],
+          "required": false
+        },
+        {
+          "label": "",
+          "type": "select",
+          "options": [
+            "1|Público",
+            "2|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "tipo privacidade",
+          "name": "f_tipo_privacidade",
+          "type": "custom-select",
+          "options": [
+            "1|Público",
+            "1|Público",
+            "0|Privado"
+          ],
+          "required": false
+        },
+        {
+          "label": "F RELEV",
+          "name": "F_RELEV",
+          "type": "radio",
+          "options": [
+            "S|sim",
+            "N|não"
+          ],
+          "required": false
+        },
+        {
+          "label": "F STA DIVULGACAO CIENTIFICA",
+          "name": "F_STA_DIVULGACAO_CIENTIFICA",
+          "type": "radio",
+          "options": [
+            "S|sim",
+            "N|não"
+          ],
+          "required": false
+        }
+      ],
+      "sections": [
+        "D.O.I",
+        "Dados gerais",
+        "Detalhamento",
+        "Autores",
+        "Palavras-chave",
+        "Áreas",
+        "Setores",
+        "Outras informaç...",
+        "Traduções",
+        "Visibilidade",
+        "Ajuda",
+        "Digital Object Identifier (DOI®)",
+        "Listar todos",
+        "Incluir novo",
+        "Listar todos",
+        "Incluir nova",
+        "Listar todos",
+        "Incluir nova",
+        "Listar todos",
+        "Clique aqui para repetir os textos já informados",
+        "Público",
+        "Salvar"
+      ]
+    }
+  },
+  "patente": {
+    "module": {
+      "id": "patente",
+      "name": "Patente",
+      "category": "Patentes e Registros",
+      "type": "crud-list",
+      "route": "PKG_PATENTE_REGISTRO.LISTA?f_cod_tipo=PP"
+    },
+    "list": {
+      "recordCount": 0,
+      "records": []
+    },
+    "errors": [
+      "Fatal: page.screenshot: Target page, context or browser has been closed"
+    ]
+  }
+}

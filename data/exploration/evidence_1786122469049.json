@@ -1,0 +1,34 @@
+{
+  "artigos_publicados": {
+    "module": {
+      "id": "artigos_publicados",
+      "name": "Artigos completos publicados em periódicos",
+      "category": "Produções",
+      "type": "crud-list",
+      "route": "pkg_artigo.lista"
+    },
+    "list": {
+      "recordCount": 0,
+      "records": [],
+      "newButtonOnclick": "informaDOI();"
+    },
+    "errors": [],
+    "newForm": {
+      "url": "https://wwws.cnpq.br/cvlattesweb/pkg_artigo.lista?f_cod=K1237839P9",
+      "fields": [
+        {
+          "label": "Incluir novo artigo div.ro",
+          "name": "fparametro",
+          "type": "text",
+          "required": false
+        }
+      ],
+      "sections": [
+        "Journal Citation Reports®",
+        "Clique aqui",
+        "Clique aqui",
+        "Incluir novo item"
+      ]
+    }
+  }
+}

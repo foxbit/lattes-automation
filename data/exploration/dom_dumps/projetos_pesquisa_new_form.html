@@ -1,0 +1,5711 @@
+<!DOCTYPE html><html xmlns="http://www.w3.org/1999/xhtml"><head>
+
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8">
+<meta http-equiv="Expires" content="Tue, 01 Dec 1990 06:30:00 GMT">
+<meta http-equiv="Cache-Control" content="no-cache,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="ROBOTS" content="NOARCHIVE">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+<title>Currículo Lattes</title>
+
+  <script type="text/javascript" src="/images/estatico/js/jquery-1.6.4.min.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/jquery.form.min.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/jquery.scrollTo.min.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/cv_gui.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/util.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/lista.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/navegacao.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/navegacao_new.js"></script>
+  <script type="text/javascript">
+
+  /* parametros
+
+  tabelaId: id da tabela que vai ter funcionalidade de grid
+  numMaxLinhas: número máximo de linhas a ser mostrado (para criação de barra de rolagem)
+  metodoEdicao: array que determina o método de edição de cada coluna
+      default = edicao livre
+      null = sem edicao
+      array de string = opcoes da combo box
+  unicoEdicao: caso o metodo seja um array, permite que o index x seja exclusivo
+  tagValor: array que determina qual elemento vai compor o array valores[] do grid
+    default = conteudo da coluna
+    null = nenhum valor atribuido
+    tag = atribui ao array o conteudo da tag escolhida dentro da coluna
+      ex: span
+  largura: array com a porcentagem de largura de cada coluna
+  alinhamento: array que determina o alinhamento de cada coluna (left,right,center,justify)
+  numMaxRegistros: indica o numero maximo de registros no array
+  exibirAdicionar: controla a visibilidade do botao adicionar
+  exibirControle: controla a visibilidade dos controles de remover/alterar
+  fnMovimento: funcao executada apos mover as linhas
+  fnAdicionar: função chamada pelo botao de adicionar na parte inferior do grid
+  manterPrimeiraLinha: impede que a primeira linha do modal seja excluida
+  esconderSetas: controla a visibilidade das setas de movimentação
+
+*/
+
+function criarGrid(parametros) {
+
+this.tabelaId = typeof parametros.tabelaId !="undefined" ? parametros.tabelaId : null;
+this.numMaxLinhas = typeof parametros.numMaxLinhas !="undefined" ? parametros.numMaxLinhas : null;
+this.metodoEdicao = typeof parametros.metodoEdicao !="undefined" ? parametros.metodoEdicao : null;
+this.unicoEdicao = typeof parametros.unicoEdicao !="undefined" ? parametros.unicoEdicao : null;
+this.tagValor = typeof parametros.tagValor !="undefined" ? parametros.tagValor : null;
+this.largura = typeof parametros.largura !="undefined" ? parametros.largura : null;
+this.alinhamento = typeof parametros.alinhamento !="undefined" ? parametros.alinhamento : null;
+this.numMaxRegistros = typeof parametros.numMaxRegistros !="undefined" ? parametros.numMaxRegistros : null;
+this.fnMovimento = typeof parametros.fnMovimento !="undefined" ? parametros.fnMovimento : null;
+this.fnAdicionar = typeof parametros.fnAdicionar !="undefined" ? parametros.fnAdicionar : null;
+this.exibirControle = typeof parametros.exibirControle !="undefined" ? parametros.exibirControle : true;
+this.exibirAdicionar = typeof parametros.exibirAdicionar !="undefined" ? parametros.exibirAdicionar : true;
+this.manterPrimeiraLinha = typeof parametros.manterPrimeiraLinha !="undefined" ? parametros.manterPrimeiraLinha : null;
+this.esconderSetas = typeof parametros.esconderSetas !="undefined" ? parametros.esconderSetas : null;
+
+this.tempInputs = new Array()
+this.tabela = document.getElementById(this.tabelaId)
+this.tabela.style.visibility = "hidden"
+this.tabela.className = "grid"
+this.scroller = document.getElementById('conteudoNavegacao') != null ? document.getElementById('conteudoNavegacao') : null;
+this.cabecalho = this.tabela.tHead
+this.numCol = this.cabecalho.rows[0].cells.length
+this.corpo = this.tabela.tBodies[0]
+this.tamMax = this.corpo.rows.length > 0 ? (this.numMaxLinhas * (this.corpo.rows[0].offsetHeight+6)) : this.numMaxLinhas * 25
+this.holder = this.tabela.parentNode
+this.alturaCabecalho = this.cabecalho.rows[0].offsetHeight
+this.opcoes = false
+this.protecao = false
+this.navegacaoScroller = document.getElementById("conteudoNavegacao");
+this.trSelecionada = null;
+
+  if (this.metodoEdicao == null) { this.bloquearEdicao = true }
+
+this.organizarEstrutura()
+this.executarTarefas()
+}
+
+criarGrid.prototype.verificarTamanho = function() {
+this.alturaLinhas = 0
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) { this.alturaLinhas += this.novoCorpo.rows[x].offsetHeight }
+
+  this.divHolder.style.height = this.alturaLinhas < this.tamMax ? this.alturaLinhas + "px" : this.tamMax + "px"
+}
+
+criarGrid.prototype.associarValores = function() {
+  if (!this.valores) this.valores = new Array()
+
+  if (this.valores.length > this.novoCorpo.rows.length) this.valores = new Array()
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    this.valores[x] = new Array()
+    for (var y=0; y<this.numCol; y++) {
+      if (this.tagValor[y] != "default") {
+      tag = this.novoCorpo.rows[x].cells[y].getElementsByTagName(this.tagValor[y])
+      tag.length > 0 ? conteudo = tag[0].innerHTML : conteudo = null
+      }
+      else { conteudo = this.novoCorpo.rows[x].cells[y].innerHTML }
+
+      if (this.tagValor[y] != "undefined" || this.tagValor[y] != null) { this.valores[x][y] = conteudo }
+    }
+  }
+
+}
+
+criarGrid.prototype.funcoesTr = function() {
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+  this.novoCorpo.rows[x].grid = this
+
+    // zebraRows
+    if (this.novoCorpo.rows[x].className != "selected") {
+    x%2 == 0 ? this.novoCorpo.rows[x].className = "par" : this.novoCorpo.rows[x].className = "impar"
+    }
+
+    // mouseover event
+     this.novoCorpo.rows[x].onmouseover = function() {
+    if (this.grid.timer) clearTimeout(this.grid.timer)
+    this.grid.mostrarOpcoes(this)
+    if (this.className !="selected") { this.className += " hover" }
+    }
+
+    // mouseout event
+    this.novoCorpo.rows[x].onmouseout = function() {
+    var _this = this.grid
+    this.grid.timer = setTimeout(function(){_this.removerOpcoes()},500)
+    if (this.className !="selected") { this.className = this.className.substring(0,this.className.indexOf(" hover")) }
+    }
+
+    // click event
+    this.novoCorpo.rows[x].onclick = function() {
+    //this.grid.executarTarefas()
+    this.grid.selecionarTr(this)
+    }
+
+  }
+}
+
+criarGrid.prototype.selecionarTr = function(tr) {
+if (this.trSelecionada) this.trSelecionada.className = "";
+
+this.funcoesTr();
+
+tr.className = "selected";
+
+this.trSelecionada = tr;
+}
+
+criarGrid.prototype.criarOverlay = function() {
+if (this.protecao) this.removerOverlay()
+this.protecao = true
+
+this.overlay = document.createElement("div")
+this.overlay.className = "overlay_grid"
+this.overlay.style.filter = "alpha(opacity=40)";
+this.overlay.style.opacity = "0.4";
+this.overlay.style.mozOpacity = "0.4";
+this.overlay.style.height = this.divHolder.offsetHeight + 20 + "px"
+this.overlay.style.width = this.novaTabela.offsetWidth + 20 + "px"
+
+this.overlay.style.top = this.scroller ? findPos(this.tabela)[1] - this.scroller.scrollTop + "px" : findPos(this.tabela)[1] + "px";
+this.overlay.style.left = findPos(this.tabela)[0] + "px"
+this.holder.appendChild(this.overlay)
+
+this.divHolder.style.overflow = "hidden"
+
+this.botaoAdicionar.onclick = function() { return false }
+}
+
+criarGrid.prototype.removeOverlay = function() {
+this.overlay.parentNode.removeChild(this.overlay)
+this.protecao = false
+
+this.divHolder.style.overflow = "auto"
+this.botaoAdicionar.onclick = function() { eval(this.grid.fnAdicionar) }
+}
+
+criarGrid.prototype.editarLinha = function(tr) {
+if (this.navegacaoScroller) this.navegacaoScroller.style.overflow = "hidden";
+if (this.trSelecionada) this.trSelecionada.className = "";
+this.botaoAdicionar.style.display = "none";
+this.moveCima.style.visibility = "hidden";
+this.moveBaixo.style.visibility = "hidden";
+
+// aqui
+  this.divHolder.style.overflow = "hidden";
+
+  this.anchors = document.getElementsByTagName("a");
+
+  for (var x=0; x<this.anchors.length; x++) {
+  this.anchors[x].oldClick = this.anchors[x].onclick;
+  this.anchors[x].onclick = function() { return false }
+  }
+
+this.removerOpcoes()
+// this.criarOverlay()
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    this.novoCorpo.rows[x].onmouseover = this.novoCorpo.rows[x].onmouseout = function() { return false }
+  }
+
+  this.edicaoTable = document.createElement("table")
+  this.edicaoTable.className = "edicaoTable"
+  this.edicaoTbody = document.createElement("tbody")
+  this.cloneTr = tr.cloneNode(true)
+  this.edicaoTable.appendChild(this.edicaoTbody)
+  this.edicaoTbody.appendChild(this.cloneTr)
+
+  this.edicaoTable.style.width = tr.offsetWidth + "px"
+  this.edicaoTable.style.top = this.scroller ? findPos(tr)[1] - this.divHolder.scrollTop - this.scroller.scrollTop + "px" : findPos(tr)[1] - this.divHolder.scrollTop + "px"
+  this.edicaoTable.style.left = findPos(tr)[0] + "px"
+  alert( findPos(tr)[0] + "|1");
+  // metodos de edicao
+  for (var x=0; x<this.cloneTr.cells.length; x++) {
+  this.cloneTr.cells[x].style.width = tr.cells[x].offsetWidth + "px"
+
+    if (this.metodoEdicao[x] == "default") {
+    this.tempInputs[x] = document.createElement("input")
+    this.tempInputs[x].value = tr.cells[x].innerHTML
+
+      if (this.cloneTr.cells[x].childNodes.length > 0) {
+      this.cloneTr.cells[x].replaceChild(this.tempInputs[x],this.cloneTr.cells[x].childNodes[0])
+      }
+
+      else {
+      this.cloneTr.cells[x].appendChild(this.tempInputs[x]);
+      }
+    }
+
+    else if (this.metodoEdicao[x] && this.metodoEdicao[x].length > 1) {
+    this.tempInputs[x] = document.createElement("select")
+
+
+      for (var y=0; y<this.metodoEdicao[x].length; y++) {
+      opcaoTemp = document.createElement("option")
+
+      isArray = (typeof this.metodoEdicao[x][y] == "object" && "splice" in this.metodoEdicao[x][y] && "join" in this.metodoEdicao[x][y]) ? true : false;
+
+        if (isArray) {
+          opcaoTemp.innerHTML = this.metodoEdicao[x][y][0];
+          opcaoTemp.value = this.metodoEdicao[x][y][1];
+        }
+
+        else {
+          opcaoTemp.innerHTML = this.metodoEdicao[x][y];
+          opcaoTemp.value = this.metodoEdicao[x][y];
+        }
+
+      this.tempInputs[x].appendChild(opcaoTemp)
+      }
+    this.cloneTr.cells[x].replaceChild(this.tempInputs[x],this.cloneTr.cells[x].childNodes[0])
+
+      for (var y=0; y<this.tempInputs[x].options.length; y++) {
+        if (this.tempInputs[x].options[y].innerHTML.toLowerCase() == tr.cells[x].innerHTML.toLowerCase()) {
+        this.tempInputs[x].options[y].selected = "selected"
+        }
+      }
+    }
+
+    else {
+    this.tempInputs[x] = document.createElement("input")
+    this.tempInputs[x].disabled = "disabled"
+
+      if (tr.cells[x].childNodes.length < 2) {
+      this.tempInputs[x].value = tr.cells[x].innerHTML
+      }
+      else {
+      this.tempInputs[x].value = tr.cells[x].childNodes[0].nodeValue
+      }
+
+      while (this.cloneTr.cells[x].childNodes.length > 0) { this.cloneTr.cells[x].removeChild(this.cloneTr.cells[x].childNodes[0]) }
+
+    this.cloneTr.cells[x].appendChild(this.tempInputs[x])
+    }
+
+  }
+
+  this.holder.appendChild(this.edicaoTable)
+
+  this.botaoAceitar = new Image()
+  this.botaoAceitar.src = "/images/estatico/imagens/aceitar.gif"
+  this.botaoAceitar.className = "botaoAceitar"
+  this.botaoAceitar.grid = this
+  this.botaoAceitar.onclick = function() { this.grid.aceitarEdicao(tr) }
+  this.botaoAceitar.style.top = parseInt(this.edicaoTable.style.top) + this.edicaoTable.offsetHeight/6 + "px"
+  this.botaoAceitar.style.left = parseInt(this.edicaoTable.style.left) + this.edicaoTable.offsetWidth + 3 + "px"
+  this.holder.appendChild(this.botaoAceitar)
+
+  this.botaoCancelar = new Image()
+  this.botaoCancelar.src = "/images/estatico/imagens/cancelar.gif"
+  this.botaoCancelar.className = "botaoCancelar"
+  this.botaoCancelar.grid = this
+  this.botaoCancelar.onclick = function() { this.grid.cancelarEdicao() }
+  this.botaoCancelar.style.top = parseInt(this.botaoAceitar.style.top) + "px"
+  this.botaoCancelar.style.left = parseInt(this.edicaoTable.style.left) + this.edicaoTable.offsetWidth + 20 + "px"
+  this.holder.appendChild(this.botaoCancelar)
+}
+
+criarGrid.prototype.aceitarEdicao = function(tr) {
+
+  for (var x=0; x<this.tempInputs.length; x++) {
+
+    if (this.unicoEdicao != null && this.unicoEdicao[x] !=null && this.tempInputs[x].value != this.metodoEdicao[x][this.unicoEdicao[x]]) {
+      for (var y=0; y<this.novoCorpo.rows.length; y++) {
+      this.novoCorpo.rows[y].cells[x].innerHTML = this.metodoEdicao[x][this.unicoEdicao[x]]
+      }
+    }
+    if (tr.cells[x].childNodes.length < 2) {
+    tr.cells[x].innerHTML = this.tempInputs[x].value
+    }
+  }
+
+this.cancelarEdicao()
+this.executarTarefas()
+}
+
+criarGrid.prototype.cancelarEdicao = function() {
+if (this.navegacaoScroller) this.navegacaoScroller.style.overflow = "auto";
+this.botaoAdicionar.style.display = "block";
+this.divHolder.style.overflow = "auto";
+this.edicaoTable.parentNode.removeChild(this.edicaoTable)
+this.botaoCancelar.parentNode.removeChild(this.botaoCancelar)
+this.botaoAceitar.parentNode.removeChild(this.botaoAceitar)
+this.funcoesTr();
+this.moveCima.style.visibility = this.esconderSetas ? "hidden" : "visible";
+this.moveBaixo.style.visibility = this.esconderSetas ? "hidden" : "visible";
+
+  for (var x=0; x<this.anchors.length; x++) {
+  this.anchors[x].onclick = this.anchors[x].oldClick;
+  }
+}
+
+criarGrid.prototype.excluirLinha = function(tr) {
+
+  if (this.manterPrimeiraLinha) {
+    if(tr.id == "equipe" && tr.rowIndex==0){
+      self.parent.caixaMsg.exibir({
+        titulo:"Atenção",
+        conteudo:"Exclusão não permitida!",
+        classe:"alerta",
+        tipo:"alerta"
+      })
+      return false;
+    }
+  }
+
+this.removerOpcoes();
+tr.parentNode.removeChild(tr);
+this.executarTarefas();
+if (this.fnMovimento) eval(this.fnMovimento);
+}
+
+criarGrid.prototype.limparGrid = function() {
+  while (this.novoCorpo.rows.length > 0) { this.novoCorpo.removeChild(this.novoCorpo.rows[0]) }
+  this.executarTarefas();
+}
+
+criarGrid.prototype.removerOpcoes = function() {
+if (this.divEdicaoTr) this.divEdicaoTr.parentNode.removeChild(this.divEdicaoTr)
+this.opcoes = false
+}
+
+criarGrid.prototype.mostrarOpcoes = function(tr) {
+if (this.opcoes) this.removerOpcoes()
+
+this.opcoes = true
+
+this.divEdicaoTr = document.createElement("div")
+this.divEdicaoTr.style.display = this.exibirControle ? "block" : "none";
+this.divEdicaoTr.className = "divEdicao"
+this.divEdicaoTr.grid = this
+
+  this.divEdicaoTr.onmouseover = function() { if (this.grid.timer) clearTimeout(this.grid.timer) }
+  this.divEdicaoTr.onmouseout = function() {
+  var _this = this.grid
+  this.grid.timer = setTimeout(function(){_this.removerOpcoes()},500)
+  }
+
+/* lugar original - fim da funcao */
+this.divEdicaoTr.style.top = this.scroller ? findPos(tr)[1] - this.divHolder.scrollTop - this.scroller.scrollTop + "px" : findPos(tr)[1] - this.divHolder.scrollTop + "px"
+this.divEdicaoTr.style.left = "77%";
+
+/* ----------------------------- */
+
+this.holder.appendChild(this.divEdicaoTr)
+
+if (!this.bloquearEdicao) {
+this.botaoEditar = new Image()
+this.botaoEditar.grid = this
+this.botaoEditar.alt = "Clique aqui para editar a linha " + (tr.rowIndex + 1)
+this.botaoEditar.title = "Clique aqui para editar a linha " + (tr.rowIndex + 1)
+this.botaoEditar.onclick = function() { this.grid.editarLinha(tr) }
+this.botaoEditar.src = "/images/estatico/imagens/lapis.gif"
+this.divEdicaoTr.appendChild(this.botaoEditar)
+}
+
+this.botaoExcluir = new Image()
+this.botaoExcluir.grid = this
+this.botaoExcluir.alt = "Clique aqui para excluir a linha " + (tr.rowIndex + 1)
+this.botaoExcluir.title = "Clique aqui para excluir a linha " + (tr.rowIndex + 1)
+this.botaoExcluir.onclick = function() { this.grid.excluirLinha(tr) }
+this.botaoExcluir.src = "/images/estatico/imagens/lixeira.gif"
+this.divEdicaoTr.appendChild(this.botaoExcluir)
+
+// if (!this.bloquearEdicao) { this.divEdicaoTr.style.width = this.botaoEditar.offsetWidth + this.botaoExcluir.offsetWidth + 12 + "px" }
+
+}
+
+criarGrid.prototype.moverTr = function(qtd) {
+
+  if (!this.trSelecionada) return false;
+
+  oldIndex = this.trSelecionada.rowIndex;
+
+  if (oldIndex+qtd < this.novoCorpo.rows.length) {
+
+    if (oldIndex + qtd < 0 || oldIndex + qtd > this.novoCorpo.rows.length - 1) { return false }
+
+    if(qtd > 0) { this.novoCorpo.insertBefore(this.novoCorpo.rows[oldIndex+qtd],this.novoCorpo.rows[oldIndex]) }
+
+    else { this.novoCorpo.insertBefore(this.novoCorpo.rows[oldIndex],this.novoCorpo.rows[oldIndex+qtd]) }
+
+    if (this.novoCorpo.rows[oldIndex+qtd].offsetTop + this.novoCorpo.rows[oldIndex].offsetHeight > this.divHolder.scrollTop + this.tamMax) {
+    this.divHolder.scrollTop += this.novoCorpo.rows[oldIndex+qtd].offsetHeight
+    }
+
+    if (this.novoCorpo.rows[oldIndex+qtd].offsetTop < this.divHolder.scrollTop) {
+    this.divHolder.scrollTop = this.novoCorpo.rows[oldIndex+qtd].offsetTop
+    }
+
+    this.executarTarefas()
+
+  }
+
+if (this.fnMovimento) eval(this.fnMovimento)
+}
+
+criarGrid.prototype.organizarAutores = function() {
+  var conteudo, str, vnautcad = 0;
+     for (var i=0; i<this.valores.length; i++) {
+       str = i + 1;
+       conteudo = str + this.getConteudo(i,0).substring(this.getConteudo(i,0).indexOf("º"));;
+       this.setConteudo(i,0,conteudo);
+    }
+}
+
+criarGrid.prototype.exibirOrdenacao = function() {
+  var conteudo, str, vnautcad = 0;
+     for (var i=0; i<this.valores.length; i++) {
+       str = i + 1;
+     conteudo = (this.getConteudo(i,0).toUpperCase().indexOf("<SPAN>") != -1) ? str + this.getConteudo(i,0).substring(this.getConteudo(i,0).toUpperCase().indexOf("<SPAN>")) : str;
+       this.setConteudo(i,0,conteudo);
+    }
+}
+
+criarGrid.prototype.executarTarefas = function() {
+this.corrigirLargura();
+this.funcoesTr();
+this.associarValores();
+this.verificarTamanho();
+
+this.tabela.style.visibility = "visible";
+}
+
+criarGrid.prototype.corrigirLargura = function() {
+  for (var x=0; x<this.numCol; x++) {
+  if (this.largura) { this.cabecalho.rows[0].cells[x].style.width = this.largura[x] + "%" }
+    for (var y=0; y<this.novoCorpo.rows.length; y++) {
+    if (this.largura) { this.novoCorpo.rows[y].cells[x].style.width = this.largura[x] + "%" }
+    if (this.alinhamento) { this.novoCorpo.rows[y].cells[x].style.textAlign = this.alinhamento[x] }
+    }
+  }
+}
+
+criarGrid.prototype.organizarEstrutura = function() {
+  this.scrollBar = document.createElement("th")
+  this.trHolder = document.createElement("tr")
+  this.tdHolder = document.createElement("td")
+  this.divHolder = document.createElement("div")
+  this.novaTabela = document.createElement("table")
+  this.novoCorpo = document.createElement("tbody")
+
+  this.novoRodape = document.createElement("tfoot");
+  this.trRodape = document.createElement("tr");
+  this.tdRodape = document.createElement("td");
+
+  while (this.corpo.rows.length > 0) { this.novoCorpo.appendChild(this.corpo.rows[0]) }
+
+  this.scrollBar.innerHTML = "&nbsp;"
+  this.scrollBar.className = "scrollBar"
+  this.cabecalho.rows[0].appendChild(this.scrollBar)
+
+  this.corpo.appendChild(this.trHolder)
+
+  this.tdHolder.colSpan = (this.numCol+1)
+  this.trHolder.appendChild(this.tdHolder)
+
+  this.divHolder.className = "holder"
+  this.divHolder.style.height = this.tamMax + "px"
+  this.tdHolder.appendChild(this.divHolder)
+
+  this.divHolder.appendChild(this.novaTabela)
+
+  this.novaTabela.appendChild(this.novoCorpo)
+
+  this.tabela.appendChild(this.novoRodape);
+  this.novoRodape.appendChild(this.trRodape);
+  this.trRodape.appendChild(this.tdRodape);
+
+  this.tdRodape.className = "rodapeGrid";
+  this.tdRodape.colSpan = this.numCol;
+
+  this.botaoAdicionar = new Image()
+  this.botaoAdicionar.grid = this
+  this.botaoAdicionar.style.display = this.exibirAdicionar ? "block" : "none";
+  this.botaoAdicionar.onmouseover = function() { this.src = "/images/estatico/imagens/add2-hover.gif" }
+  this.botaoAdicionar.onmouseout = function() { this.src = "/images/estatico/imagens/add2.gif" }
+  this.botaoAdicionar.className = "botaoAdicionar"
+  this.botaoAdicionar.src = "/images/estatico/imagens/add2.gif"
+  this.botaoAdicionar.onclick = function() { eval(this.grid.fnAdicionar) }
+  this.tdRodape.appendChild(this.botaoAdicionar);
+
+  this.moveBaixo = document.createElement("img")
+  this.moveBaixo.grid = this
+  this.moveBaixo.alt = "Move a linha para baixo"
+  this.moveBaixo.title = "Move a linha para baixo"
+  this.moveBaixo.className = "gridSetaBaixo"
+  this.moveBaixo.style.visibility = this.esconderSetas ? "hidden" : "visible";
+  this.moveBaixo.src = "/images/estatico/imagens/down.gif"
+  this.moveBaixo.onmouseover = function() { this.src = "/images/estatico/imagens/down-hover.gif" }
+  this.moveBaixo.onmouseout = function() { this.src = "/images/estatico/imagens/down.gif" }
+  this.moveBaixo.onclick = function() { this.grid.moverTr(1) }
+  this.tdRodape.appendChild(this.moveBaixo)
+
+  this.moveCima = document.createElement("img")
+  this.moveCima.grid = this
+  this.moveCima.className = "gridSetaCima"
+  this.moveCima.alt = "Move a linha para cima"
+  this.moveCima.title = "Move a linha para cima"
+  this.moveCima.style.visibility = this.esconderSetas ? "hidden" : "visible";
+  this.moveCima.src = "/images/estatico/imagens/up.gif"
+  this.moveCima.onmouseover = function() { this.src = "/images/estatico/imagens/up-hover.gif" }
+  this.moveCima.onmouseout = function() { this.src = "/images/estatico/imagens/up.gif" }
+  this.moveCima.onclick = function() { this.grid.moverTr(-1) }
+  this.cabecalho.rows[0].cells[this.numCol-1].insertBefore(this.moveCima,this.cabecalho.rows[0].cells[this.numCol-1].childNodes[0])
+
+}
+
+criarGrid.prototype.getConteudo = function(row,cell) {
+  return (this.novoCorpo.rows[row].cells[cell].innerHTML);
+}
+
+criarGrid.prototype.setConteudo = function(row,cell,conteudo) {
+  this.novoCorpo.rows[row].cells[cell].innerHTML = conteudo;
+}
+
+criarGrid.prototype.adicionarDados = function(dados,index,autor) {
+
+  if (this.numMaxRegistros && this.novoCorpo.rows.length >= this.numMaxRegistros) {
+    self.parent.caixaMsg.exibir({
+      titulo:"Atenção",
+      conteudo:"Número máximo de registros atingido",
+      classe:"alerta",
+      tipo:"alerta"
+    })
+  return false;
+  }
+
+inserirDados = true
+
+  if (autor) {
+    for (var x=0; x<this.novoCorpo.rows.length; x++) {
+      span = this.novoCorpo.rows[x].cells[0].getElementsByTagName("span");
+
+      if (span[0].innerHTML.indexOf("-") !=-1 && dados[0].indexOf("-") !=-1 || span[0].innerHTML.indexOf("D") != -1 && dados[0].indexOf("-") !=-1) {
+      inserirDados = false;
+      }
+    }
+  }
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    if (!index) {
+    contadorIgualdade = dados.length
+      for (var y=0; y<dados.length; y++) {
+        if (this.novoCorpo.rows[x].cells[y].innerHTML.toUpperCase() == dados[y].toUpperCase()) {
+        contadorIgualdade--
+        }
+        if (!contadorIgualdade) {
+        inserirDados = false
+        break
+        }
+      }
+    }
+    else {
+      if (this.novoCorpo.rows[x].cells[index].innerHTML.toUpperCase() == dados[index].toUpperCase()) {
+      inserirDados = false
+      break
+      }
+    }
+  }
+
+  if (inserirDados) {
+    this.novoCorpo.insertRow(this.novoCorpo.rows.length)
+
+    for (var x=0; x<dados.length; x++) {
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].insertCell(x)
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].cells[x].innerHTML = dados[x]
+    }
+
+    this.divHolder.scrollTop = this.divHolder.scrollHeight
+
+    this.executarTarefas()
+  }
+
+  else {
+    self.parent.caixaMsg.exibir({
+      titulo:"Atenção",
+      conteudo:"Informação existente",
+      classe:"alerta",
+      tipo:"alerta"
+    })
+  }
+}
+
+criarGrid.prototype.getItems = function() {
+return this.novoCorpo.getElementsByTagName("tr");
+}
+
+criarGrid.prototype.importarDados = function(tr) {
+
+  if (this.numMaxRegistros && this.novoCorpo.rows.length >= this.numMaxRegistros) {
+  self.parent.caixaMsg.exibir({
+    titulo:"Atenção",
+    conteudo:"Número máximo de registros atingido",
+    classe:"alerta",
+    tipo:"alerta"
+  })
+  return false;
+  }
+
+inserirTr = true
+
+  for (var x=0; x<this.novoCorpo.rows.length; x++) {
+    conteudoAtual = this.novoCorpo.rows[x].textContent ? this.novoCorpo.rows[x].textContent : this.novoCorpo.rows[x].innerText
+    conteudoNovo = tr.textContent ? tr.textContent : tr.innerText
+    if (conteudoAtual == conteudoNovo) { inserirTr = false }
+  }
+
+  if (inserirTr) {
+
+  this.novoCorpo.insertRow(this.novoCorpo.rows.length)
+
+    for (var x=0; x<this.numCol; x++) {
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].insertCell(x)
+    this.novoCorpo.rows[this.novoCorpo.rows.length-1].cells[x].innerHTML = tr.getElementsByTagName("td")[x].innerHTML
+    }
+
+  this.divHolder.scrollTop = this.divHolder.scrollHeight
+
+  this.executarTarefas()
+  }
+
+  else {
+    self.parent.caixaMsg.exibir({
+      titulo:"Atenção",
+      conteudo:"Informação existente",
+      classe:"alerta",
+      tipo:"alerta"
+    })
+  }
+}
+
+
+
+  </script>
+  <script type="text/javascript" src="/images/estatico/js/caixa_msg.js"></script>
+  <script type="text/javascript" src="/images/estatico/js/jquery-ui-1.8.13.custom.min.js"></script>
+  
+  <script type="text/javascript" src="/images/estatico/js/acessibilidade-modais.js"></script>
+  
+  <script type="text/javascript" src="/images/estatico/js/jquery.tipsy.js"></script>
+  
+  <link rel="stylesheet" type="text/css" href="/images/estatico/css/tooltip-manager.css">
+  <link rel="stylesheet" type="text/css" href="/images/estatico/css/tooltip-position.css">
+
+  <link rel="stylesheet" href="/images/estatico/css/curriculo_new.css">
+  <link rel="stylesheet" href="/images/estatico/css/cv_navegacao.css">
+  <link rel="stylesheet" href="/images/estatico/css/lattes.gui.css">
+  <link rel="stylesheet" href="/images/estatico/css/jquery-ui-1.8.13.custom.css">
+
+  <link rel="stylesheet" href="/images/estatico/css/popup.css">
+
+<style>
+
+html, body {background:#CCDCEF; height:100%;}
+table {font:normal 11px arial}
+form {height:100%; width:100%}
+textarea { border:1px solid Gray;font-family:Arial,Helvetica,sans-serif;font-size:11px; }
+* html input, * html textarea, * html select {font:normal 11px arial}
+input[disabled]{background-color:#F0F0F0 ;}
+</style>
+
+
+        <script>
+
+$(document).ready(function(){
+// habilita a instancia desejada do modal
+self.parent.modalCV2.habilitaModal();
+self.parent.modalCV2.setarTitulo("Projetos de pesquisa", true );
+});
+
+</script>
+
+
+
+</head>
+<body>
+
+
+        <style type="text/css">
+        table.grid .holder {
+          min-width: 0 !important;
+          min-height: 0 !important;
+          overflow: inherit !important;
+        }
+        .input-error {
+          background: none repeat scroll 0 0 #FFFFCC !important;
+        }
+        table.grid .holder {
+          min-height: 0 !important;
+          min-width: 0 !important;
+          overflow-x: hidden;
+          overflow-y: scroll !important;
+        }
+        .grid>tbody>tr>td>div>table>tbody>tr>td{
+          overflow: hidden;
+        }
+        </style>
+
+        <script>
+        $(document).ready(FUNCTION() {
+          $("input[name=F_ANO_INIC], input[name=F_ANO_FIM], input[name=F_NRO_GRADUACAO], input[name=F_NRO_MESTRADO_ACAD], input[name=F_NRO_ESPECIALIZACAO], input[name=F_NRO_MESTRADO_PROF],  input[name=F_NRO_DOUTORADO], input[name=F_NRO_TEC_NIVEL_MEDIO]")
+          .keypress(FUNCTION(event) {
+            var pattner = /\d/;
+            return (event.which == "8" || event.which == "0") || (pattner.test(String.fromCharCode(event.which)));
+          });
+        });
+        </script>
+        
+
+        <script>
+
+        $(document).ready(FUNCTION(){
+            $("#idDivEspecifique").hide();
+            var f_titulo = $("f_titulo").val();
+            if (f_titulo == null) {
+              $("#GN_PROJETO").append("<input TYPE='hidden' value='P'  />");
+              $("select[name=F_TPO_NATUREZA]").parent().remove();
+              $("form").append("<select name='F_TPO_NATUREZA' style='display:none;'> <option value='P'> </option></select>");
+            }
+        });
+        </script>
+        
+<script>
+
+       var f_cod_tipo = "P";
+
+        $(document).ready(FUNCTION(){
+        $("select[name=F_TPO_NATUREZA]").val(f_cod_tipo);
+        });
+
+        </script>
+
+        <script>
+
+        criarGrid.prototype.importarDados1 = function(tr) {
+
+        if (this.numMaxRegistros && this.novoCorpo.rows.length >= this.numMaxRegistros) {
+        self.parent.caixaMsg.exibir({
+        titulo:"Atenção",
+        conteudo:"Número máximo de registros atingido",
+        classe:"alerta",
+        tipo:"alerta"
+        })
+        return false;
+        }
+
+        inserirTr = true
+
+        for (var x=0; x<this.novoCorpo.rows.length; x++) {
+
+        var idProds =    $(this.novoCorpo.rows).find("span");
+        var prodAtual = tr.getElementsByTagName("td")[0].getElementsByTagName("span")[0].textContent;
+        $.each(idProds,function(index, value){
+        value = $(value);
+        if (value.text() == prodAtual ){
+        inserirTr = false;
+        }
+        }) ;
+
+        conteudoAtual = this.novoCorpo.rows[x].textContent ? this.novoCorpo.rows[x].textContent : this.novoCorpo.rows[x].innerText
+        conteudoNovo = tr.textContent ? tr.textContent : tr.innerText
+        if (conteudoAtual == conteudoNovo) { inserirTr = false }
+        }
+
+        //pega o valor do span atual
+        //alert(tr.getElementsByTagName("td")[0].getElementsByTagName("span")[0].textContent);
+        //verifica se determinado id já existe na grid
+        /*var idsProds =  $("table:eq(15)", window.parent.document);
+        idsProds = $(idsProds);
+        alert(idsProds.html());
+        */
+
+        if (inserirTr) {
+        this.novoCorpo.insertRow(this.novoCorpo.rows.length)
+
+        for (var x=0; x<this.numCol; x++) {
+            this.novoCorpo.rows[this.novoCorpo.rows.length-1].insertCell(x)
+            this.novoCorpo.rows[this.novoCorpo.rows.length-1].cells[x].innerHTML = tr.getElementsByTagName("td")[x].innerHTML
+          }
+          this.divHolder.scrollTop = this.divHolder.scrollHeight
+          this.executarTarefas()
+        }
+
+        else {
+            self.parent.caixaMsg.exibir({
+              titulo:"Atenção",
+              conteudo:"Informação existente",
+              classe:"alerta",
+              tipo:"alerta"
+              })
+            }
+        }
+
+        </script>
+
+
+
+        <form action="PKG_PROJETO.FORM" name="GN_PROJETO" id="GN_PROJETO" method="POST">
+
+
+<script>
+
+function trim(stringToTrim) {
+	return stringToTrim.replace(/^\s+|\s+$/g,"");
+}
+
+
+  String.prototype.ltrim = function() {
+  return this.replace(/^\s+/,"");
+}
+
+String.prototype.rtrim = function() {
+	return this.replace(/\s+$/,"");
+}
+
+$(document).ready(function(){
+
+var childsAreaSelecao = $(".areaSelecao > *" );
+if( childsAreaSelecao.length == 0 ){
+$(".areaSelecao").css("width","auto");
+$(".scroller").css("width","735px");
+}
+
+/*$("textarea[maxlength]").keyup(function(event){
+var valor = $(this).val();
+var maxLength = $(this).attr("maxlength");
+
+if (valor > maxLength){
+$(this).val(  valor.substring(0, maxLength)  );
+}
+})*/;
+
+$(".areaSelecao > a").each(function(){
+$(this).attr("title", $(this).attr("title").ltrim());
+$(this).attr("title", $(this).attr("title").rtrim());
+});
+});
+</script>
+
+<script>
+//variaveis de controle - snapshot da página
+
+var ctA=-1;
+var arNome= new Array();
+var arTipo= new Array();
+var arValor= new Array();
+
+var NS4, IE4, NS6, ver4;
+var styleok=0;
+var navok=0;
+if (navigator.appVersion.charAt(0) == "5") {
+  if (navigator.appName == "Netscape") {
+    NS6 = 1; styleok=1; navok=1;
+  }
+} else if (document.layers) {
+   NS4 = 1; styleok=0;  navok=1;
+} else if (document.all) {
+  IE4 = 1;  styleok=1;  navok=1;
+}
+
+// controle para marcacao de campos invalidos //
+var cte_old=0;
+obj = new Array();
+obj_old = new Array();
+
+function trim(str) {
+  i=0;
+  while (((str.substring(i,i+1))== " ")&&(i < str.length)) i++;
+  aux=str.substring(i,str.length); i=aux.length;
+  while (((aux.substring(i-1,i)) == " ")&&(i>1)) i--;
+  aux=aux.substring(0,i);
+  return aux;
+}
+function e_Num(valor){
+  en=true; st="0123456789"; aux=trim(valor); ct=0;
+  while (ct+1 <= aux.length) {
+    if (st.indexOf(aux.substring(ct,ct+1))== -1) {
+      en=false; break;
+    }
+    ct++;
+  }
+  return (en);
+}
+function check_data(valor) {
+  vlraux = trim(valor);
+  if ((vlraux == "") || (vlraux.length != 10) ||
+     (vlraux.substring(2,3) != "/") ||(vlraux.substring(5,6)!= "/")){
+     return false;
+  }
+  dia = parseInt(vlraux.substring(0,2),10); mes = parseInt(vlraux.substring(3,5),10);
+  ano = parseInt(vlraux.substring(6,10),10);
+  if (isNaN(dia) || isNaN(mes) || isNaN(ano) || (mes < 1) || (mes > 12) || (dia < 1)) {
+    return false;
+  }
+  tabmes = "312831303130313130313031";
+  if ((dia == 29) && (mes == 2)){
+    if ((ano == 0) || ((ano % 4) != 0)){
+      return false;
+    } else {
+  return true;
+    }
+  }
+  k = (mes * 2 - 2)
+  if (dia > tabmes.substring(k,k + 2)) {
+    return false;
+  } else {
+    return true;
+  }
+ return false;
+}
+function checkcep(vlr){
+  num="0123456789";
+  if (vlr.length!=9) {
+    return false;
+  } else {
+    for (i=0;i<8;i++){
+      if ((i==5)&&((vlr.substring(i,i+1))!="-")){
+        return false;
+      } else if ((num.indexOf(vlr.substring(i,i+1))==-1)&&(i!=5)){
+        return false;
+      }
+    }
+  }
+  return true;
+}
+function checkmail(vlr){
+  if ((vlr.indexOf("@")==-1)||(vlr.indexOf(" ")!=-1)||(vlr.indexOf(",")!=-1)||(vlr.indexOf(";")!=-1)){
+    return false;
+  } else { return true;
+  }
+}
+
+function posicionarCampo(obj) {
+  document.getElementById("conteudoNavegacao").scrollTop = findPos(obj)[1] - 5;
+}
+
+function alerta(err) {
+  var cp;
+  estilopadrao(cte_old);
+  saida = "Não foi possível atualizar as informações porque ocorreram os seguintes problemas:\n\n<br><br>";
+  for (i=0; i <= err-1; i++) {
+    saida += msg[i] + "<br>";
+    if (styleok) {
+      nmecampo= obj[i].toUpperCase();
+      if (nmecampo!="DC.F_AUTORES_PROD" && nmecampo!="DC.F_AUTORES_L" ) {
+        cp=eval(obj[i]);
+       // cp.style.backgroundColor="#FFFFDC";
+       $(cp).addClass("input-error");
+        if (i==0) {
+           posicionarCampo(cp);
+        }
+      }
+    }
+  }
+
+  cte_old = err;
+  copiaArray (obj, obj_old);
+
+// alert(saida);
+//  self.parent.caixaMsg.exibir("Atenção",saida, null,true,"alerta");
+
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: saida,
+  classe:"alerta",
+  tipo:"alert"});
+  if (obj[0].toUpperCase() !="DC.F_AUTORES_PROD" && nmecampo!="DC.F_AUTORES_L") {
+    cp = eval(obj[0]);
+    if(!cp.disabled){
+         cp.focus();
+    }
+  }
+  return;
+}
+function estilopadrao(e) {
+  if (styleok) {
+    for (i=0; i <= e-1; i++) {
+
+      nmecampo= obj_old[i].toUpperCase();
+      if (nmecampo!="DC.F_AUTORES_PROD") {
+        cp=eval(obj_old[i]);
+        $(cp).removeClass("input-error");
+      //  cp.style.backgroundColor="#FFFFFF";
+      }
+    }
+  }
+  return;
+}
+
+function copiaArray(v1,v2){
+  for (var i=0; i < v1.length; i++) {
+    v2[i] = v1[i];
+  }
+  return;
+}
+
+// funcoes para fazer snapshot da pagina
+
+function pegaValor(_nomeC){
+   var vs="";
+   ob=eval("dc."+ _nomeC);
+   for (var ls=0; ls< ob.length; ls++) {
+     if (ob[ls].checked) {
+       vs=ob[ls].value;
+     break;
+    }
+  }
+    return vs;
+}
+
+function pegaTodosValores(_nome){
+ vl="";
+ obz=eval("dc." + _nome);
+ for (var j=0; j< obz.length; j++) {
+   vl+= obz[j].value;
+ }
+ return vl
+}
+
+function adicionaElemento (_nome, _tipo , _valor) {
+  nomelc=_nome.toLowerCase();
+  if (!((nomelc=="f_ctr")||(nomelc=="f_cod")||(nomelc=="f_seq")||
+  (nomelc=="f_autores_l")||(nomelc=="f_setor_l")||(nomelc=="f_area_l")||(nomelc=="f_plv_l")||
+  (nomelc=="f_autores_prod")||(nomelc=="f_setor_prod")||(nomelc=="f_area_prod")||(nomelc=="f_plv_prod") )) {
+    ctA++;
+    arNome[ctA]=_nome;
+    arTipo[ctA]=_tipo;
+    arValor[ctA]=_valor;
+  } else if ((nomelc=="f_autores_prod")||(nomelc=="f_setor_prod")||(nomelc=="f_area_prod")||(nomelc=="f_plv_prod") ) {
+    ctA++;
+    arNome[ctA]= _nome;
+    arTipo[ctA]=_tipo;
+    arValor[ctA]= pegaTodosValores(_nome);
+  }
+
+}
+
+function formSnapShot() {
+  var saida="";
+  var fim = dc.elements.length;
+
+  for (var i=0; i < fim; i++) {
+    nome=""; tipo=""; valor="";
+    tipo=dc.elements[i].type;
+    nome=dc.elements[i].name;
+
+    if ( (tipo == "text") || (tipo == "hidden") || (tipo == "textarea") ) {
+      valor=dc.elements[i].value;
+      adicionaElemento(nome, tipo, valor);
+
+    } else if (tipo == "select-one") {
+      valor=dc.elements[i][dc.elements[i].selectedIndex].value;
+      adicionaElemento(nome, tipo, valor);
+
+    } else if ((tipo == "radio") || (tipo == "checkbox")) {
+      valor=pegaValor(nome);
+      adicionaElemento(nome, tipo, valor);
+    }
+  }
+
+
+// for (var k=0; k<= ctA; k++){
+//   saida+=arNome[k] + "  " + arTipo[k] + "  " + arValor[k] + "\n";
+// }
+ alert("snapshot campos do formulário : \n\n" + saida);
+
+}
+
+function formModificado(){
+  var saida2 = "";
+  mudou=false;
+  for (var k=0; k<= ctA; k++){
+    objm = eval("dc." + arNome[k]);
+    objt = arTipo[k];
+    if (!((objt == "radio") || (objt == "checkbox"))) {
+      if ((arNome[k]=="f_autores_prod")||(arNome[k]=="f_setor_prod")||(arNome[k]=="f_area_prod")||(arNome[k]=="f_plv_prod")) {
+        if ((pegaTodosValores(arNome[k]))!=arValor[k] ){
+          mudou=true;
+          saida2+= "2 campo " + arNome[k] + " foi modificado : " + pegaTodosValores(arNome[k]) + " \n-> " + arValor[k] + "\n\n";
+          break;
+        }
+      } else if (objm.value != arValor[k]) {
+          mudou=true;
+          saida2+= "1 campo " + arNome[k] + " foi modificado : " + objm.value  + " \n-> " + arValor[k] + "\n\n";
+          break;
+      }
+    } else if ((pegaValor(arNome[k]))!=arValor[k] ){
+          mudou=true;
+          saida2+= "3 campo " + arNome[k] + " foi modificado : " + pegaValor(arNome[k]) + " \n-> " + arValor[k] + "\n\n";
+          break;
+    }
+  }
+//  if (!mudou) saida2="os dados nao foram modificados.";
+//  if (saida2!="") alert(saida2);
+  return mudou;
+}
+
+function v(endereco) {
+  if (formModificado()){
+    if (confirm("Foram realizadas modificações nesta página que ainda não foram gravadas\n e as mesmas serão descartadas.\n\nDeseja prosseguir?")) {
+//      fecha();
+      location=endereco;
+    }
+  } else {
+//      fecha();
+      location=endereco;
+  }
+  return;
+}
+
+function voltar() {
+  if (formModificado()){
+    if (confirm("Foram realizadas modificações nesta página que ainda não foram gravadas\n e as mesmas serão descartadas.\n\nDeseja prosseguir?")) {
+      cancelar();
+    }
+  } else {
+      cancelar();
+  }
+  return;
+}
+
+/*function alertBox(arg) {
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: arg,
+  classe:"alerta",
+  tipo:"alert"});
+  return;
+}
+
+function confirmBox(arg) {
+  self.parent.caixaMsg.exibir({
+  titulo:"Atenção",
+  conteudo: arg,
+  classe:"alerta",
+  tipo:"confirm"});
+  return;
+}*/
+
+</script>
+
+<script>
+/*Define altura para tela_menor*/
+$(document).ready(function(){
+$(".controle").each(function(){
+$(".tela_menor").css("max-height","386px");
+});
+});
+</script>
+
+<script>
+/*Define altura para tela_menor*/
+$(document).ready(function(){
+$(".controle_peq").each(function(){
+$(".tela_menor").css("max-height","386px");
+});
+});
+</script>
+
+
+        <script>
+        ab=1;
+
+
+        function iniciaAjax() {
+          var ajax;
+          try {
+            ajax = new XMLHttpRequest();
+          } catch(ee) {
+            try {
+              ajax = new ActiveXObject("Msxml2.XMLHTTP");
+            } catch(e) {
+              try {
+          ajax = new ActiveXObject("Microsoft.XMLHTTP");
+              } catch(E) {
+          ajax = false;
+              }
+            }
+          }
+          return ajax;
+        }
+
+        function chamaVerificaVinculo(vcodinst,vcodinst2){
+            if ((vcodinst!="")||(vcodinst2!="")) {
+              url="pkg_projeto.verifica_vinculo_ajax?f_cod=K1237839P9&f_codinst=" + vcodinst + "&f_codinstoutra=" + vcodinst2 ;
+              chamaUrl(url);
+            }
+            return;
+        }
+
+        function tiraMasc(proc) {
+        var tam_proc;
+        var i;
+        var digito;
+        var acum = "";
+        var v_proc;
+        v_proc = trim(proc.toUpperCase());
+        tam_proc  = v_proc.length;
+        for (i=0;i< tam_proc ;i++){
+            digito = v_proc.substring(i,i+1);
+            if (digito >= "0" && digito <= "9"){
+                  acum = acum + digito;
+            }
+        }
+
+         return acum;
+        }
+
+
+      function recuperaDadosInst(vcnpj){
+      var wcnpj;
+      wcnpj = tiraMasc(vcnpj);
+           $.ajax({
+      url: "PKG_PROJETO.PR_RECUPERA_DADOS_INST",
+      data:{p_cnpj: wcnpj},
+      dataType: "json",
+      async: false,
+      success: function(data){
+      if (trim(data.nome) == ""){
+        $("input[name=f_cod_inst_empresa]").val("");
+        $("input[name=f_txt_nme_empresa]").val("");
+        $("input[name=f_txt_email_institucional]").val("");
+        $("input[name=f_txt_setor]").val("");
+         alert("CNPJ inválido.");
+      } else {
+        $("input[name=f_cod_inst_empresa]").val(data.cod);
+        $("input[name=f_txt_nme_empresa]").val(data.nome);
+        $("input[name=f_txt_email_institucional]").val(data.email);
+        $("input[name=f_txt_setor]").val("");
+      }
+
+      },
+      error: function(data){
+      alert("Erro na requisição");
+      }
+      });
+        }
+      function escondeDivVinc(){
+        dc.f_vc_ativ.value="S";
+        //document.getElementById("vinculo").style.display="none";
+        return;
+      }
+      function resetDivVinc(){
+        dc.f_vinc.value="";
+        dc.f_enqua.value="";
+        dc.f_stavinc.options.selectedIndex=0;
+        dc.f_carga.value="";
+        return;
+      }
+      function fecha(){
+        return;
+      }
+      function pp_inst() {
+
+      //  alert("Abrir janela de instituicoes");
+        fecha();
+      //  janela = window.open("PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC&f_cod=K1237839P9" ,"ji","width=650,height=400,top=200,left=200,toolbar=no,scrollbars=yes")
+            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_inst?f_pgm=INSTFINANC&f_cod=K1237839P9&F_SEQ_FUNCAO=&F_SEQ_ATIV= &F_SEQ_PROJ=",true,70,350,450);
+        ab=0;
+        return;
+      }
+      function pp_equipe() {
+      //  alert("Abrir janela de integrantes");
+        fecha();
+      //  janela = window.open("PKG_PROJETO.pp_lista_autores?f_cod=K1237839P9&f_tipo=P" ,"ji","height=400,width=350,top=100,left=600,toolbar=no")
+            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_autores?f_cod=K1237839P9&f_tipo=P",true,70,350,450);
+        ab=0;
+        return;
+      }
+
+      function pp_prod(arg) {
+        if (arg==1) {
+          tx="PROD"
+        } else if (arg==2) {
+          tx="TESE";
+        }
+        fecha();
+      //  janela = window.open("PKG_PROJETO.pp_lista_prod?f_cod=K1237839P9&f_tpo=" + tx,"ji","height=400,width=670,top=100,left=200,toolbar=no")
+            self.parent.modalCV3.setarUrl("PKG_PROJETO.pp_lista_prod?f_cod=K1237839P9&f_tpo=" + tx,true,70,350,700);
+        ab=0;
+      }
+      </script>
+      
+
+      <script>
+      dc=document.GN_PROJETO;
+
+
+      // LOAD DO GRID //
+      function carregarGrid() {
+      /*  grid_1 = new criarGrid(
+          {
+            tabelaId:'grid1',
+            numMaxLinhas:8,
+            numMaxRegistros:100,
+            exibirControle:true,
+            metodoEdicao:[null,null,['Sim','Não']],
+            unicoEdicao:[null,null,1],
+            tagValor:['span', null, 'default'],
+            largura:[40,40,20],
+            alinhamento:['left','left','left'],
+            fnAdicionar:'pp_equipe()',
+            manterPrimeiraLinha:true,
+            esconderSetas:true
+          })    */
+
+
+      grid_2 = new criarGrid(
+          {
+            tabelaId:'grid2',
+            numMaxLinhas:10,
+            numMaxRegistros:100,
+            exibirControle:true,
+            metodoEdicao:[null,null,null,null,null],
+            unicoEdicao:[ null,null,null,null,null],
+            tagValor:['span','span','span','span',null],
+            largura:[20,20,25,25,10],
+            alinhamento:['left','left','left','left','left'],
+            fnAdicionar:'pp_inst()',
+            esconderSetas:true,
+            exibirControle:false,
+          })
+
+
+      grid_3 = new criarGrid(
+          {
+            tabelaId:'grid3',
+            numMaxLinhas:10,
+            numMaxRegistros:400,
+            exibirControle:true,
+            tagValor:['span', null, null],
+            largura:[50,13, 37],
+            alinhamento:['left','center','left'],
+            fnAdicionar:'pp_prod(1)',
+            esconderSetas:true
+          })
+
+
+      grid_4 = new criarGrid(
+          {
+            tabelaId:'grid4',
+            numMaxLinhas:10,
+            numMaxRegistros:100,
+            exibirControle:true,
+            tagValor:['span', null, null],
+            largura:[50,13, 37],
+            alinhamento:['left','center','left'],
+            fnAdicionar:'pp_prod(2)',
+            esconderSetas:true
+          })
+
+        return;
+      }
+
+      addListener(window,"load",carregarGrid);
+      </script>
+      
+
+<script>
+//  dt=new Date();
+  y=2026
+  // ; // y=dt.getYear();
+  ab=1;
+//  y<=99 ?y+=1900 : y=y;
+  yn=1983
+</script>
+
+
+      <script>
+      function sele(txt){
+      if(txt!="Outro") {
+        dc.f_vinc.value=txt;
+      }else {
+        dc.f_vinc.value="";
+      }
+        dc.f_vinc.focus();
+        return true;
+      }
+      /*
+      function dominio(){
+        self.parent.caixaMsg.exibir({
+        titulo:"&nbsp;"
+       ,conteudo:"Vínculo"
+       ,fnConfirmar:"modalCV2.getDocument().sele(this.combo.value)"
+       ,tipo:"combo"
+       ,dados:[["Servidor público","Servidor público"],["Celetista formal","Celetista formal"],
+       ["Professor visitante","Professor visitante"],
+       ["Colaborador","Colaborador"],
+       ["Bolsista recém-doutor","Bolsista recém-doutor"],
+       ["Outro (especifique)","Outro (especifique)"]
+       ]});
+       }
+
+      function checkVinc2() {
+        vl=trim(dc.f_vinc.value.toUpperCase() );
+
+        if (vl!="") {
+          if (vl=="SERVIDOR PÚBLICO OU CELETISTA"){
+              return true;
+          }
+        }
+
+        return false;
+      }
+      */
+      
+
+
+      function emailGratuito(pemail){
+      var eg =new Array();
+      eg[0]= "@gmail.";
+      eg[1]= "@hotmail.";
+      eg[2]= "@msn.";
+      eg[3]= "@yahoo.";
+      eg[4]= "@ig.";
+      eg[5]= "@ibest.";
+      eg[6]= "@bol.";
+      eg[7]= "@zipmail.";
+      eg[8]= "@uol";
+      pemail = pemail.toLowerCase();
+      for(var j = 0;j<pemail.length;j++){
+      if (pemail.indexOf(eg[j]) > 0){
+        return true;
+      }
+      }
+      return false;
+      }
+
+
+      function validaInst(pinst,pinst2) {
+
+      var v_ret = "";
+
+
+      $.ajax({
+          TYPE: "POST",
+          url: "pkg_projeto.testa_inst",
+          data: {
+              f_cod: "K1237839P9",
+              f_inst: pinst,
+              f_inst2: pinst2        
+          },
+          async: false,
+          success: function(result){
+               v_ret = result;
+          }
+      });
+      return v_ret;
+
+      }
+
+var possuiEmail;
+var idresp;      
+function verificaIDEmail(wseq) {
+
+var v_retExiste;
+
+$.ajax({
+    TYPE: "POST",
+    url: "pkg_projeto.recup_dados_coautor",
+    data: {
+        f_cod: "K1237839P9",
+        f_seq: wseq
+
+
+    },
+    dataType: "json",
+    async: false,
+    success: function(result){
+        possuiEmail = result.possuiEmail;     
+        idresp = result.idresp;
+
+    }
+});
+
+
+
+
+}      
+
+
+function qtdChecktematica(){
+     var vc = 0;    
+     for (var i=0;i<=dc.f_tematica.length-1;i++){
+          if(dc.f_tematica[i].checked) vc++;
+      }
+      return vc;
+}
+
+function verificaCheckOutra(){
+     for (var i=0;i<=dc.f_tematica.length-1;i++){
+          if(dc.f_tematica[i].value=="O" && dc.f_tematica[i].checked) return true;
+      }
+      return false;
+}
+
+function verificaMarcouTpoInov(){
+    for (var i=1;i<=dc.f_tpo_acao_inov.length-1;i++){
+            if(dc.f_tpo_acao_inov[i].checked) return true;
+      }
+return false;
+}
+
+
+
+      function check(){
+
+      configurarInstituicoes();
+        var iniCheckVinc=0;
+        texto="";
+        cte =0;
+        msg=new Array();
+        var vc=false;
+
+        ai=trim(dc.F_ANO_INIC.value); af=trim(dc.F_ANO_FIM.value);
+        cg=trim(dc.f_carga.value);
+
+
+      var vi;   
+      if(trim(dc.f_cod_inst.value) != "" || trim(dc.f_cod_inst2.value) != ""){
+        vi =validaInst(dc.f_cod_inst.value,dc.f_cod_inst2.value);   
+        if(vi=="1"){
+        alert("Existem duas Instituições cadastradas com o nome " + dc.f_inst.value +" no módulo de Atuação Profissional.\nFavor unificar as informações em apenas uma Atuação e excluir a outra.\nApós a correção, o projeto poderá ser cadastrado normalmente.");
+        return;  
+        }
+      }
+
+      if(af=="" && dc.F_TPO_SITUACAO[dc.F_TPO_SITUACAO.selectedIndex].value=="C"){
+
+        msg[cte] ="Campo Ano fim obrigatório não informado.";
+          obj[cte++] = "dc.F_ANO_FIM";
+      }
+
+        if (trim(dc.f_titulo.value)==""){
+      //    msg[cte] = "Informe o título do projeto";
+            msg[cte] ="Campo Nome do projeto obrigatório não informado.";
+          obj[cte++] = "dc.f_titulo";
+        }
+        if (dc.F_TPO_SITUACAO[dc.F_TPO_SITUACAO.selectedIndex].value==""){
+      //    msg[cte] = "Informe a situação";
+            msg[cte] ="Campo Situação obrigatório não informado.";
+          obj[cte++] = "dc.F_TPO_SITUACAO";
+
+        }
+         if (dc.F_TPO_NATUREZA[dc.F_TPO_NATUREZA.selectedIndex].value==""){
+      //    msg[cte] = "Informe a natureza";
+            msg[cte] ="Campo Natureza obrigatório não informado.";
+          obj[cte++] = "dc.F_TPO_NATUREZA";
+
+        }
+         if (ai==""){
+      //    msg[cte] = "Informe o ano de inicio.";
+            msg[cte] ="Campo Ano início obrigatório não informado.";
+          obj[cte++] = "dc.F_ANO_INIC";
+
+        }
+         if ((ai!="")&& ((!e_Num(ai))||(ai.length<4)) ){
+      //    msg[cte] = "Ano de inicio invalido. O ano deve estar no formato 9999";
+            msg[cte] = "Ano de início inválido. O ano deve estar no formato 9999.  ";
+          obj[cte++] = "dc.F_ANO_INIC";
+
+        }
+         if ((ai!="")&&(ai>y)){
+      //    msg[cte] = "O ano de inicio nao pode ser posterior ao ano atual";
+            msg[cte] = "O ano de início não pode ser posterior ao ano atual.  ";
+          obj[cte++] = "dc.F_ANO_INIC";
+
+        }
+         if (parseInt(ai)<yn){
+      //    msg[cte] = "O ano de inicio nao pode ser anterior ao ano de nascimento";
+            msg[cte] = "O ano de início não pode ser anterior ao ano de nascimento.  ";
+          obj[cte++] = "dc.F_ANO_INIC";
+
+        }
+         if ((af!="")&& ((!e_Num(af))||(af.length<4)) ){
+      //    msg[cte] = "Ano fim invalido. O ano deve estar no formato 9999";
+            msg[cte] = "Ano fim inválido. Ano deve estar no formato 9999.  ";
+          obj[cte++] = "dc.F_ANO_FIM";
+
+        }
+         if ((ai!="")&&(af!="")&&(parseInt(af)<parseInt(ai))){
+      //    msg[cte] = "Data de inicio debe ser anterior a data fim.";
+            msg[cte] = "Data de início deve ser anterior a data fim.  ";
+          obj[cte++] = "dc.F_ANO_INIC";
+
+        }
+         if (((v=trim(dc.F_NRO_GRADUACAO.value))!="")&&(!e_Num(v))){
+      //    msg[cte] = "Campo Graduação esta com valor invalido";
+            msg[cte] = "Campo graduação está com valor inválido.  ";
+          obj[cte++] = "dc.F_NRO_GRADUACAO";
+
+        }
+         if (((v=trim(dc.F_NRO_ESPECIALIZACAO.value))!="")&&(!e_Num(v))){
+      //    msg[cte] = "Campo Especialização esta com valor invalido";
+            msg[cte] = "Campo especialização está com valor inválido.  ";
+          obj[cte++] = "dc.F_NRO_ESPECIALIZACAO";
+
+        }
+         if (((v=trim(dc.F_NRO_MESTRADO_ACAD.value))!="")&&(!e_Num(v))){
+      //    msg[cte] = "Campo Mestrado Academico esta com valor invalido";
+            msg[cte] = "Campo mestrado acadêmico está com valor inválido.  ";
+          obj[cte++] = "dc.F_NRO_MESTRADO_ACAD";
+
+        }
+         if (((v=trim(dc.F_NRO_MESTRADO_PROF.value))!="")&&(!e_Num(v))){
+      //    msg[cte] = "Campo Mestrado Profissionalizante esta com valor invalido";
+            msg[cte] = "Campo mestrado profissionalizante está com valor inválido.  ";
+          obj[cte++] = "dc.F_NRO_MESTRADO_PROF";
+
+        }
+         if (((v=trim(dc.F_NRO_DOUTORADO.value))!="")&&(!e_Num(v))){
+      //    msg[cte] = "Campo Doutorado esta com valor invalido";
+            msg[cte] = "Campo doutorado está com valor inválido.  ";
+          obj[cte++] = "dc.F_NRO_DOUTORADO";
+        }
+
+        if (trim(dc.f_txt_email_institucional.value) != "" && !/^([\w\.-]{1,64}@[\w\.-]{1,252}\.\w{2,4})$/i.test(dc.f_txt_email_institucional.value) &&  dc.f_txt_email_institucional.value != "" ){
+          msg[cte] = "Campo E-mail institucional invalido.";
+          obj[cte++] = "dc.f_txt_email_institucional";
+        }
+
+        if(trim(dc.f_txt_email_institucional.value) != "" && emailGratuito(dc.f_txt_email_institucional.value)){
+          msg[cte] = "Campo E-mail Institucional não poderá conter e-mail de contas gratuitas";
+          obj[cte++] = "dc.f_txt_email_institucional";
+
+        }
+
+        if(dc.f_tpo_pesq_emp[0].checked == true && trim(dc.f_txt_nme_empresa.value) == ""){
+
+               msg[cte] ="Campo Nome da empresa obrigatório não informado";
+             obj[cte++] = "dc.f_txt_nme_empresa";
+
+        }
+
+        if(dc.f_tpo_pesq_emp[0].checked == true && trim(dc.f_txt_email_institucional.value) == ""){
+
+               msg[cte] ="Campo E-mail Institucional obrigatório não informado";
+             obj[cte++] = "dc.f_txt_email_institucional";
+
+        }
+
+        if(dc.f_tpo_pesq_emp[0].checked == true && trim(dc.f_txt_setor.value) == ""){
+
+             msg[cte] ="Campo Setor obrigatório não informado";
+             obj[cte++] = "dc.f_txt_setor";
+
+        }
+
+        if(dc.f_tpo_pesq_emp[0].checked == true && trim(dc.f_cnpj_empresa.value) == ""){
+
+             msg[cte] ="Campo CNPJ da empresa obrigatório não informado";
+             obj[cte++] = "dc.f_cnpj_empresa";
+
+        }
+
+          if(dc.f_sta_inovacao[0].checked == true && trim(dc.f_txt_potencial.value) == ""){
+
+                 msg[cte] ="Campo \"Qual o potencial de inovação do projeto\" obrigatório não informado";
+               obj[cte++] = "dc.f_txt_potencial";
+
+          }
+  
+
+        if (!checkIncluiUsuarioComoAutor()){
+      //    msg[cte] = "O seu nome deverá ser incluído na lista de autores.";
+            msg[cte] = "O seu nome deverá ser incluído na lista de participantes  ";
+          obj[cte++] = "dc.f_autores_l";
+        }
+
+        if (dc.f_ctr.value =="I" && dc.f_codorgao.value==""&&dc.f_codorgao2.value=="") {
+      //     msg[cte] = "Informe o orgao/unidade"
+             msg[cte] ="Campo Órgão/Unidade obrigatório não informado.";
+           obj[cte++] = "dc.f_orgao";
+        }
+
+        if (dc.f_ctr.value =="I"  && (((i1=dc.f_cod_inst.value)=="")&&((i2=dc.f_cod_inst2.value)==""))){
+               msg[cte] ="Campo Instituição de execução obrigatório não informado";
+             obj[cte++] = "dc.f_inst";
+      }
+        if (dc.F_TPO_SITUACAO.options[dc.F_TPO_SITUACAO.options.selectedIndex].value == "A" && dc.F_ANO_FIM.value != ""){
+             msg[cte] = "Selecione o ano fim apenas se a situação da produção for concluído ";
+             obj[cte++] = "dc.F_ANO_FIM";
+         }
+        if ((dc.F_ANO_FIM.value < dc.F_ANO_INIC.value) && dc.F_ANO_FIM.value != "" ){
+             msg[cte] = "Quando há Potencial de inovação a descrição é obrigatória.";
+             obj[cte++] = "dc.F_ANO_FIM";
+         }
+
+         if(  $("select[name=f_sta_inovacao]").length >= 1  ){
+        if (dc.f_sta_inovacao[0].checked == true && dc.f_txt_potencial.value == ""){
+             msg[cte] = "Quando há Potencial de inovação a descrição é obrigatória.";
+             obj[cte++] = "dc.f_txt_potencial";
+         }
+
+      }
+        if (!verifResp()){
+      //       msg[cte] = "A equipe deve ter um responsável";
+               msg[cte] = "A equipe deve ter um coordenador";
+             obj[cte++] = "dc.f_autores_l";
+        }
+
+        if (qtdResp() > 1){
+
+               msg[cte] = "Não é permitido selecionar mais de um coordenador";
+             obj[cte++] = "dc.f_autores_l";
+        }
+  if (cte > 0) {
+          // alert("com erro");
+          alerta(cte);
+        } else {
+      //      alert("sem erro 00");
+
+
+      var ProviderAutor = autorGrid.getProvider(),
+      s= "";
+      for (var x=0; x<ProviderAutor.length; x++) {
+       ins = false
+       cn = 0
+       for (var i in ProviderAutor[x]){
+      //   alert(i);
+      //   alert(ProviderAutor[x][i]);
+         if(i=="c" || i=="l" || i=="t" || i=="tit" || i=="add"){
+          cn++;
+          if(cn > 1){
+           s+= "|";
+          }
+          ins = true;
+          if(i=="r"){
+           s+=   "r" + ProviderAutor[x][i];
+          } else{
+           s+=   ProviderAutor[x][i];
+          }
+         }
+       }
+      if(ins){
+              s+="@";
+      }
+      }
+
+      s = s.substring(0,s.length-1);
+      var vs = s + "@";
+      //alert(s);
+      //return;
+      var wseqC = recuperaSeqCoord(s);
+      if (wseqC > 0) {
+            verificaIDEmail(wseqC);
+      }
+
+
+
+
+      var emailParaInst = false;
+
+      var vf1 = recuperaPosicaoUsuario(vs);
+      //alert("recuperaPosicaoUsuario=" + vf1)
+      var vf2 = recuperaPosicaoResponsavel(vs);
+      //alert("recuperaPosicaoResp=" + vf2)
+
+
+
+      if (!existeArroba(vf1,vf2,vs) && !existeArroba(vf2,vf1,vs)){
+      //   alert("nao existe @")
+         emailParaInst = true;
+
+      }
+
+      dc.f_autores_l.value=s;
+
+      //     alert("autores=" + texto);
+           texto="";
+           for (var i=0; i< grid_2.novoCorpo.rows.length; i++) {
+             var vcodnat = grid_2.valores[i][3];
+
+             texto += grid_2.valores[i][0] + "|" +  grid_2.valores[i][1] + "|" + grid_2.valores[i][2] + "|" + grid_2.valores[i][3] + "|" + "@";
+           }
+           dc.f_inst_l.value=texto;
+           texto="";
+           for (var i=0; i< grid_3.novoCorpo.rows.length; i++) {
+             texto += grid_3.valores[i][0] + "@";
+           }
+           dc.f_producoes_l.value=texto;
+
+           texto="";
+           for (var i=0; i< grid_4.novoCorpo.rows.length; i++) {
+             texto += grid_4.valores[i][0] + "@";
+           }
+           dc.f_orientacoes_l.value=texto;
+
+           if(dc.f_ctr.value=="I"){
+           debugger;
+              if(emailParaInst && dc.f_tpo_pesq_emp[0].checked){
+                if(trim(dc.f_txt_email_institucional.value) != ""){
+                   alert("As informações deste projeto serão validadas pela Empresa informada no formulário.");
+                }
+              } else {
+                if(!emailParaInst){
+                  if(idresp!="S"){
+                       if(!confirm( "Atenção, o pesquisador informado como Coordenador do projeto não está identificado em seu currículo,\nportanto não será possível validar as informações deste projeto.\nDeseja continuar?" )) return;
+                  } else if(possuiEmail!="S") {
+                       if(!confirm("Atenção, o pesquisador informado como Coordenador do projeto não possui e-mail cadastrado no CNPq,\nportanto não será possível validar as informações deste projeto.\nDeseja continuar?")) return;                  
+                  } else {
+                     alert("As informações deste projeto serão validadadas pelo Coordenador.");
+                  }   
+
+                }
+              }
+          } else if(dc.f_ctr.value=="U" && dc.f_tpo_pesq_emp[0].checked && seqResp() != seqCoord && possuiValidacao == "S"){
+              alert("Com a alteração do coordenador, o projeto deverá ser certificado novamente.");
+          } else if(dc.f_ctr.value=="U" && dc.f_tpo_pesq_emp[0].checked && possuiValidacao == "N"){
+              if(emailParaInst){
+                   alert("As informações deste projeto serão validadas pela Empresa informada no formulário.");
+              } else {
+                alert("As informações deste projeto serão validadadas pelo Coordenador.");
+              }
+          } else if(dc.f_ctr.value=="U" &&
+                    dc.f_tpo_pesq_emp[0].checked &&
+                    possuiValidacao == "S" &&
+                    usuarioCoord == "S" &&
+                    tiraMasc(odlCGC) !=
+                    tiraMasc(dc.f_cnpj_empresa.value)){
+          alert("Com a alteração da Empresa o projeto deverá ser certificado novamente.");
+          }
+
+          //enviar();
+          verificaPriv();
+
+        }
+        return true;
+      }
+
+function verificaPriv() {
+    if ($("[name=f_tipo_privacidade]").val() != valorPriv) {
+      self.parent.caixaMsg.exibir({
+        titulo: "Alerta",
+        conteudo: "Realmente deseja aplicar as configurações de privacidade?",
+        classe: "alerta",
+        tipo: "confirm",
+        fnConfirmar: "modalCV2.getDocument().enviar()"
+      });
+    } else {
+      enviar();
+    }
+  }
+function recuperaSeqCoord(pstr){
+//alert(pstr); 
+//pstr = pstr.substr(0,pstr.length -1);
+//alert(pstr);
+var ar = pstr.split("@");
+for(var j=0;j<ar.length;j++){
+  var ar2 = ar[j].split("|");
+  if(ar2[ar2.length-1]=="s"){
+  return ar2[1];
+  }
+}
+return null;
+
+}
+
+      function existeArroba(pini,pfim,pstr){
+      var c;
+      if(pini > pfim){
+              return false;
+      }
+      for ( var j = pini;j <= pfim;j++){
+          c = pstr.substr(j,1);
+          if(c=="@"){
+            return true;
+          }
+      }
+      return false;
+      }
+
+      function recuperaPosicaoUsuario(pstr){
+
+      var p = pstr.indexOf("||");
+
+      if(p > -1){
+          return p;
+      } else {
+          return pstr.indexOf("|-");
+      }
+
+      }
+
+      function recuperaPosicaoResponsavel(pstr){
+
+      return  pstr.indexOf("|s@");
+
+      }
+
+      function verificaNaturFinacNula(){
+           for (var i=0; i< grid_2.novoCorpo.rows.length; i++) {
+
+                if(grid_2.valores[i][4] != "Auxílio Financeiro" &&
+                   grid_2.valores[i][4] != "Bolsa" &&
+                   grid_2.valores[i][4] != "Remuneração" &&
+                   grid_2.valores[i][4] != "Cooperação" &&
+                   grid_2.valores[i][4] != "Outra"){
+                             return true;
+                }
+           }
+           return false;
+
+      }
+
+      function seqResp(){
+      var ProviderAutor = autorGrid.getProvider()
+      for (var x=0; x<ProviderAutor.length; x++) {
+       ins = false
+       cn = 0
+       for (var i in ProviderAutor[x]){
+
+          if(i=="tit" && ProviderAutor[x][i] == "s"){
+                      if (ProviderAutor[x]["c"] == ""){
+                         return "0";
+                      } else {
+                         return ProviderAutor[x]["c"];
+                      }
+          }
+        }
+      }
+      return false;
+
+      }
+
+
+      function verifResp(){
+      var ProviderAutor = autorGrid.getProvider()
+      for (var x=0; x<ProviderAutor.length; x++) {
+       ins = false
+       cn = 0
+       for (var i in ProviderAutor[x]){
+      //    alert(i);
+      //    alert(ProviderAutor[x][i]);
+          if(i=="tit" && ProviderAutor[x][i] == "s"){
+      //             alert("true");
+                   return true;
+
+          }
+        }
+      }
+      return false;
+
+      }
+
+
+      function qtdResp(){
+      var ProviderAutor = autorGrid.getProvider()
+      var vqtdr = 0;
+      for (var x=0; x<ProviderAutor.length; x++) {
+       ins = false
+       cn = 0
+       for (var i in ProviderAutor[x]){
+      //    alert(i);
+      //    alert(ProviderAutor[x][i]);
+          if(i=="tit" && ProviderAutor[x][i] == "s"){
+      //             alert("true");
+                   vqtdr++;
+
+          }
+        }
+      }
+      return vqtdr;
+
+      }
+
+      function checkIncluiUsuarioComoAutor(){
+      var ProviderAutor2 = autorGrid.getProvider()
+      for (var x2=0; x2<ProviderAutor2.length; x2++) {
+       for (var i2 in ProviderAutor2[x2]){
+      //    alert(i2);
+          if(i2=="c"){
+             codigo = ProviderAutor2[x2][i2] + "";
+      //     alert(ProviderAutor2[x2][i2]);
+             if(codigo.substring(0,1)=="-" || codigo=="" || codigo=="D"){
+              return true;
+             }
+          }
+       }
+      }
+      return false;
+
+
+
+       }
+
+
+      function enviar(){
+        dc.submit();
+        return true;
+      }
+      function cancelar(){
+        dc.f_ctr.value="V"; enviar();
+        return true;
+      }
+      function del(){
+      //  if (confirm("\n\n Você realmente deseja excluir este projeto? \n\n")){
+       if (confirm("\n\nDeseja realmente excluir este projeto? \n\n")){
+           dc.f_ctr.value="E";
+          enviar();
+        }
+      }
+      function sele_inst(){
+
+          nivel="";
+          fecha();
+          url="PKG_PROJETO.pp_lista_inst?f_pgm=INSTVINCULO&f_cod=K1237839P9"
+            self.parent.modalCV3.setarUrl(url,true,70,350,450);
+          ab=0;
+        return;
+      }
+      function orgao(){
+        tpo="";inst="";
+        if ((dc.f_cod_inst.value=="")&&(dc.f_cod_inst2.value=="")){
+          alert("Informe a instituição.");
+        } else {
+          if (dc.f_cod_inst.value!=""){
+            tpo="V"; inst=dc.f_cod_inst.value;
+          } else {
+            tpo="D"; inst=dc.f_cod_inst2.value;
+          }
+
+      //    dc.f_vc_ativ.value=="";
+
+          url="PKG_PROJETO.pp_orgao_cargo?f_cod=K1237839P9&f_cod_inst=" + tpo + inst;
+            self.parent.modalCV3.setarUrl(url,true,70,350,450);
+          fecha();
+      //    janela=window.open(url, "Jinst","status=no,scrollbars=yes,width=500,height=400,top=0,left=0")
+          ab=0;
+      //    janela.focus();
+        }
+        return true;
+      }
+
+
+      function mostraValores(){
+       var texto="";
+       for (var i=0; i<= grid_2.novoCorpo.rows.length - 1; i++) {
+         texto += grid_2.valores[i][0] + "\n";
+       }
+
+
+       alert("gr2\n\n" + texto);
+       return;
+      }
+
+      </script>
+
+      
+
+
+<style>
+  .imagemOculta{display: none;cursor: pointer;}
+</style>
+
+
+
+<div class="navegacao"><div class="areaSelecao" style="height: 385px;"><a class="selecionado" href="javascript:void(0)" title="Dados gerais">Dados gerais</a><a href="javascript:void(0)" title="Equipe">Equipe</a><a href="javascript:void(0)" title="Instituição de financiamento">Instituição de ...</a><a href="javascript:void(0)" title="Produção C &amp; T">Produção C &amp; T</a><a href="javascript:void(0)" title="Orientações">Orientações</a><a href="javascript:void(0)" title="Traduções">Traduções</a><a href="javascript:void(0)" title="Visibilidade">Visibilidade</a></div>
+  <fieldset style="height: 385px;">
+    <div class="scroller" id="conteudoNavegacao">
+      <div class="conteudo">
+
+ <div id="helpCont0" style="">
+         <a href="https://ajuda.cnpq.br/index.php/Projetos_de_pesquisa" target="blank" id="helpHref" class="ajudaFora">
+            <img src="/images/estatico/imagens/help-icon_24.gif" border="0" style="float:right !important">Ajuda
+ </a>
+ </div>
+<em titulo="Dados gerais">
+Dados gerais
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+
+        <table border="0" width="560">
+        <tbody><tr>
+          <td colspan="3">
+Nome do projeto<br>
+<input type="text" name="f_titulo" size="85" maxlength="255">
+
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3">Descrição<br>
+<textarea maxlength="3900" name="f_ref" cols="85" rows="4" wrap="soft"></textarea><br>
+
+        </td></tr><tr valign="top">
+          <td width="17%">Natureza<br>
+           <select name="F_TPO_NATUREZA">
+                   <option></option>
+                   <option value="D">Desenvolvimento</option>
+                   <option value="E">Extensão</option>
+
+          <option value="P">Pesquisa</option>
+
+      <option value="N">Ensino</option>
+
+              <option value="O">Outra</option>
+        </select>
+        </td>
+
+      <td width="35%">
+        Situação<br>
+          <select name="F_TPO_SITUACAO" size="1">
+            <option></option>
+
+            <option value="D">Desativado</option>
+
+            <option value="C">Concluído</option>
+
+                <option value="A">Em andamento</option>
+          </select>
+
+      </td>
+      <td width="7%">Ano início<br>
+ 
+<input type="text" name="F_ANO_INIC" size="4" maxlength="4">
+
+        </td>
+      <td width="20%">Ano fim<br>
+  
+<input type="text" name="F_ANO_FIM" size="4" maxlength="4">
+</td></tr></tbody></table>
+<input type="hidden" name="f_tpo_cooperacao" value="X">
+<input type="hidden" name="f_tpo_acao_inov" value="X">
+<input type="hidden" name="f_tematica" value="X">
+  
+  <table>
+  <tbody>
+
+  <tr>
+    <td colspan="4"><div style="display: inline;">É um projeto de cooperação instituição de pesquisa e empresa? </div>
+      Sim<input type="radio" name="f_tpo_pesq_emp" value="S"> Não<input type="radio" name="f_tpo_pesq_emp" value="N" checked="checked">
+    </td>
+  </tr>
+  <tr id="cnpjEmp" style="display: none;">
+  <td colspan="2">
+  CNPJ da empresa<br>
+  <input type="hidden" name="f_cod_inst_empresa" value="">
+  <input type="text" maxlength="18" name="f_cnpj_empresa" style="width: 28% ! important;" value="" onchange="recuperaDadosInst(this.value)">
+  </td></tr>
+  <tr id="nomeEmp" style="display: none;">
+  <td colspan="2">
+  Nome da empresa<br>
+  <input type="text" maxlength="400" name="f_txt_nme_empresa" style="width: 100%; background-color: rgb(240, 240, 240);" value="" readonly="true">
+  </td></tr>
+  <tr id="emailSetorEmp" style="display: none;">
+  <td style="width: 38%;">
+  E-mail Institucional<br>
+  <input type="text" maxlength="400" style="width: 100% ! important;" name="f_txt_email_institucional" value="">
+  </td>
+  <td style="width: 50%;">
+  Setor<br>
+  <input type="text" style="width: 56% ! important;" maxlength="400" name="f_txt_setor" value="">
+  </td>
+  </tr>
+  
+
+<tr>
+<td colspan="4"><div id="possuiInovacao" style="display: inline;">O projeto possui potencial de inovação de produtos, processos ou serviços?</div>
+      Sim<input type="radio" name="f_sta_inovacao" value="S"> Não<input type="radio" name="f_sta_inovacao" value="N" checked="checked"> </td>
+</tr>
+
+<tr id="potencial" style="display: none;">
+<td colspan="4"><div id="qualPotencial">Qual o potencial de inovação do projeto?</div>
+<input name="f_txt_potencial" maxlength="400" type="text" style="width:100%" value="">
+</td></tr>
+
+
+
+        <script>
+if ("" == "S")
+    $("input[name=f_sta_inovacao][value=S]").attr("checked", "true");
+else {
+    $("input[name=f_sta_inovacao][value=N]").attr("checked", "true");
+    $("#potencial").hide();
+    }
+    $("input[name=f_sta_inovacao]").click(function(){
+var $this = $(this);
+if($this.val() == "S")
+$("#potencial").show("slow");
+else{
+$("#potencial").hide("slow");
+$("input[name=f_txt_potencial]").val("");
+}
+});
+</script> 
+
+  </tbody></table>
+
+<script>
+if ("" == "S")
+    $("input[name=f_tpo_pesq_emp][value=S]").attr("checked", "true");
+else {
+    $("input[name=f_tpo_pesq_emp][value=N]").attr("checked", "true");
+    $("#cnpjEmp").hide();
+    $("#nomeEmp").hide();
+    $("#emailSetorEmp").hide();
+    }
+    $("input[name=f_tpo_pesq_emp]").click(function(){
+var $this = $(this);
+if($this.val() == "S"){
+    $("#cnpjEmp").show("slow");
+    $("#nomeEmp").show("slow");
+    $("#emailSetorEmp").show("slow");
+}  else{
+    $("#cnpjEmp").hide();
+    $("#nomeEmp").hide();
+    $("#emailSetorEmp").hide();
+$("input[name=f_cnpj_empresa]").val("");
+$("input[name=f_txt_nme_empresa]").val("");
+$("input[name=f_txt_email_institucional]").val("");
+$("input[name=f_txt_setor]").val("");
+}
+})
+</script>
+
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+
+<style>
+div.suggest-wrapper div.suggest-list div.suggest-content a span {color:#00f}
+div.suggest-wrapper div.suggest-list div.suggest-content a.selected span {color:#fff}
+table.sup td.label {font-weight:bold; text-align:right}
+</style>
+
+
+<script>
+var titularPessoaProvider = 
+[{}];
+	  var titularPessoaNumMaxRegistros = 2000;
+</script>
+
+
+<script>
+/*
+* GLOBAL
+*/
+var blurCSS = {fontStyle:"italic", color:"#AEAEAE"},
+    focusCSS = {fontStyle:"normal", color:"#000000"},
+    upArrowSRC = "/images/estatico/imagens/up-arrow.png",
+    downArrowSRC = "/images/estatico/imagens/down-arrow.png",
+    arrowCSS = { top:"-2px", marginRight:"5px"};
+
+/*
+*  TITULAR_INST
+*/
+
+var titularCadInstWin,titularInstGrid, titularInstWin, titularInstTodosWin, titularInstSuggest, treetitularInst,
+  titularInstFocus = false,
+  titularInstGlobalData = null,
+  titularInstPrompt = "Selecione ou inclua uma nova instituição";
+
+
+/*
+*  TITULAR_PESSOA
+*/
+
+var titularPessoaGrid, titularPessoaWin, titularPessoaTodosWin, titularPessoaSuggest, treeTitularPessoa,
+  titularPessoaFocus = false,
+  titularPessoaGlobalData = null,
+  titularPessoaPrompt = "Digite, selecione ou inclua um novo pesquisador";
+
+/*
+*  AUTOR
+*/
+
+var autorGrid, autorWin, autorTodosWin, autorSuggest, treeAutor,
+  autorFocus = false,
+  autorGlobalData = null,
+  autorPrompt = "Digite, selecione ou inclua um novo pesquisador";
+
+/*
+*  SETOR
+*/
+
+var setorGrid, setorTodosWin, setorSuggest, treeSetor,
+    setorFocus = false,
+    setorGlobalData = null,
+    setorPrompt = "Digite ou selecione um setor";
+
+// PALAVRA
+
+var palavraGrid, palavraWin, palavraTodosWin, palavraSuggest, treePalavra,
+  palavraFocus = false,
+  palavraGlobalData = null,
+  palavraPrompt = "Digite, selecione ou inclua uma nova palavra-chave";
+
+// AREA
+
+var areaGrid, areaTodosWin, areaWin, areaSuggest, treeArea, treeTodosArea,
+  areaFocus = false,
+  areaGlobalData = null,
+  areaPrompt = "Digite, selecione ou inclua uma nova área de conhecimento";
+
+/*
+*  PROGRAMA
+*/
+
+var programaGrid, programaTodosWin, programaSuggest, treeprograma,
+    programaFocus = false,
+    programaGlobalData = null,
+    programaPrompt = "Selecione o programa";
+
+
+/*
+*  UTIL
+*/
+
+var update = {
+  grid:function(data, selectedData, grid) {
+    $.extend(data, selectedData);
+
+    data["editable"] = false;
+
+    grid.getProvider().push({});
+    grid.generate();
+
+    data = null;
+    selectedData = null;
+  }
+}
+
+var validate = {
+  titularInstGrid:function(provider, data) {
+
+    for (var x=0; x<provider.length; x++) {
+
+      var it = provider[x];
+
+      if (it["l"] == null || it["t"] == null || it["c"] == null) {
+        continue;
+      }
+      if ((it["c"] < 0 && data["c"] < 0 ) || (it["c"] == "D" && data["c"] < 0 ) ) {
+        alert("Informação existente");
+        return false;
+      }
+
+      var nomEqual = (it["l"] == data["l"]),
+        citEqual = (it["t"] == data["t"]),
+        codEqual = (it["c"] == data["c"]);
+
+      if (nomEqual && citEqual && codEqual) {
+        alert("Informação já existente");
+        return false;
+      }
+
+    }
+
+    return true;
+  },
+  titularPessoaGrid:function(provider, data) {
+
+    for (var x=0; x<provider.length; x++) {
+
+      var it = provider[x];
+      if (it["l"] == null || it["t"] == null || it["c"] == null) {
+        continue;
+      }
+      if ((it["c"] < 0 && data["c"] < 0 ) || (it["c"] == "D" && data["c"] < 0 ) ) {
+        alert("Informação existente");
+        return false;
+      }
+
+      var nomEqual = (it["l"] == data["l"]),
+        citEqual = (it["t"] == data["t"]),
+        codEqual = (it["c"] == data["c"]);
+
+      if (nomEqual && citEqual && codEqual) {
+        alert("Informação já existente");
+        return false;
+      }
+
+    }
+
+    return true;
+  },
+  autorGrid:function(provider, data) {
+
+    for (var x=0; x<provider.length; x++) {
+
+      var it = provider[x];
+
+      if (it["l"] == null || it["t"] == null || it["c"] == null) {
+        continue;
+      }
+      if ((it["c"] < 0 && data["c"] < 0 ) || (it["c"] == "D" && data["c"] < 0 ) ) {
+        alert("Informação existente");
+        return false;
+      }
+
+      var nomEqual = (it["l"] == data["l"]),
+        citEqual = (it["t"] == data["t"]),
+        codEqual = (it["c"] == data["c"]);
+
+      if (nomEqual && citEqual && codEqual) {
+        alert("Informação já existente");
+        return false;
+      }
+
+    }
+
+    return true;
+  },
+  setorGrid:function(provider, data) {
+
+    for (var x=0; x<provider.length; x++) {
+
+      var it = provider[x];
+
+      if (!it["l"] || !it["c"]) {
+        continue;
+      }
+
+      var nomEqual = (it["l"] == data["l"]),
+        codEqual = (it["c"] == data["c"]);
+
+      if (nomEqual && codEqual) {
+        alert("Informação já existente");
+        return false;
+      }
+
+    }
+
+    return true;
+  },
+  programaGrid:function(provider, data) {
+
+    for (var x=0; x<provider.length; x++) {
+
+      var it = provider[x];
+
+      if (!it["l"] || !it["c"]) {
+        continue;
+      }
+
+      var nomEqual = (it["l"] == data["l"]),
+        codEqual = (it["c"] == data["c"]);
+
+      if (nomEqual && codEqual) {
+        alert("Informação já existente");
+        return false;
+      }
+
+    }
+
+    return true;
+  },
+  areaGrid:function(provider, data) {
+
+    for (var x=0; x<provider.length; x++) {
+
+      var it = provider[x];
+
+      if (!it["l"] || !it["c"]) {
+        continue;
+      }
+
+      var nomEqual = (it["l"] == data["l"]),
+          parEqual = (it["p"] == data["p"]);
+
+      if (nomEqual && parEqual) {
+        alert("Informação já existente");
+        return false;
+      }
+
+    }
+
+    return true;
+  },
+  palavraGrid:function(provider, data) {
+
+    for (var x=0; x<provider.length; x++) {
+
+      var it = provider[x];
+
+      if (!it["l"]) {
+        continue;
+      }
+
+      var nomEqual = (it["l"] == data["l"]);
+
+      if (nomEqual) {
+        alert("Palavra já existente");
+        return false;
+      }
+
+    }
+
+    return true;
+  }
+}
+
+function updatePatenteProvider() {
+  var provider = autorGrid.getProvider();
+
+  $.each(provider, function(i, item){
+    if (item['tit']) item['tit'] = "n";
+  });
+}
+
+function createDynamicSelect(o) {
+  var select = $("<select></select>");
+
+  $.each(o, function(i, item){
+    var option = $("<option></option>");
+
+    if (item.l != null) option.html(item.l);
+    if (item.v != null) option.val(item.v);
+
+    select.append(option);
+  });
+
+  return select;
+}
+
+
+
+var render = {
+
+
+
+  titular:function(cell, data, index) {
+    if (!data['l']) {
+      cell.data("editable", false);
+      return false;
+    }
+
+    var label = (data["tit"] == "s") ? "sim" : "não",
+      wrapper = $("<div class='cell-wrapper'></div>").text(label);
+
+    cell.empty().append(wrapper).data("editable", true);
+  },
+  indexAutor: function(cell, data, index) {
+    if (!data['l']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>").text(++index);
+    cell.empty().append(wrapper);
+  },
+  indextitularInst: function(cell, data, index) {
+    if (!data['l']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>").text(++index);
+    cell.empty().append(wrapper);
+  },
+  indexTitularPessoa: function(cell, data, index) {
+    if (!data['l']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>").text(++index);
+    cell.empty().append(wrapper);
+  },
+
+
+  indexSetor: function(cell, data, index) {
+    if (!data['l']) return false;
+
+       var upArrow = $("<img />").attr("src", upArrowSRC).css(arrowCSS).bind("click", function(){
+        setorGrid.clearRows();
+        setorGrid.getRow(index).addClass("selected");
+        setorGrid.moveUp();
+      }),
+      downArrow = $("<img />").attr("src", downArrowSRC).css(arrowCSS).bind("click", function(){
+        setorGrid.clearRows();
+        setorGrid.getRow(index).addClass("selected");
+        setorGrid.moveDown(-2);
+      }),
+      input = $("<input type='text' />").val(index + 1 + "º").width(30).css({textAlign:"center"}).bind("blur", function(){
+      var newIndex = Math.max(1, Math.min(input.val(), setorProvider.length - 1)) - 1,
+        oldIndex = $.inArray(data, setorProvider);
+
+      if (!isNaN(newIndex)) {
+        setorProvider.splice(oldIndex, 1);
+        setorProvider.splice(newIndex, 0, data);
+      }
+
+      setorGrid.generate();
+
+    });
+
+    cell.empty().append(downArrow).append(upArrow).append(input).append(" setor");
+  },
+  indexPalavra: function(cell, data, index) {
+    if (!data['l']) return false;
+
+       var upArrow = $("<img />").attr("src", upArrowSRC).css(arrowCSS).bind("click", function(){
+        palavraGrid.clearRows();
+        palavraGrid.getRow(index).addClass("selected");
+        palavraGrid.moveUp();
+      }),
+      downArrow = $("<img />").attr("src", downArrowSRC).css(arrowCSS).bind("click", function(){
+        palavraGrid.clearRows();
+        palavraGrid.getRow(index).addClass("selected");
+        palavraGrid.moveDown(-2);
+      }),
+      input = $("<input type='text' />").val(index + 1 + "º").width(30).css({textAlign:"center"}).bind("blur", function(){
+      var newIndex = Math.max(1, Math.min(input.val(), palavraProvider.length - 1)) - 1,
+        oldIndex = $.inArray(data, palavraProvider);
+
+      if (!isNaN(newIndex)) {
+        palavraProvider.splice(oldIndex, 1);
+        palavraProvider.splice(newIndex, 0, data);
+      }
+
+      palavraGrid.generate();
+
+    });
+
+    cell.empty().append(downArrow).append(upArrow).append(input).append(" palavra");
+  },
+  indexArea: function(cell, data, index) {
+    if (!data['l']) return false;
+
+       var upArrow = $("<img />").attr("src", upArrowSRC).css(arrowCSS).bind("click", function(){
+        areaGrid.clearRows();
+        areaGrid.getRow(index).addClass("selected");
+        areaGrid.moveUp();
+      }),
+      downArrow = $("<img />").attr("src", downArrowSRC).css(arrowCSS).bind("click", function(){
+        areaGrid.clearRows();
+        areaGrid.getRow(index).addClass("selected");
+        areaGrid.moveDown(-2);
+      }),
+      input = $("<input type='text' />").val(index + 1 + "º").width(30).css({textAlign:"center"}).bind("blur", function(){
+      var newIndex = Math.max(1, Math.min(input.val(), areaProvider.length - 1)) - 1,
+        oldIndex = $.inArray(data, areaProvider);
+
+      if (!isNaN(newIndex)) {
+        areaProvider.splice(oldIndex, 1);
+        areaProvider.splice(newIndex, 0, data);
+      }
+
+      areaGrid.generate();
+
+    });
+
+    cell.empty().append(downArrow).append(upArrow).append(input).append("área");
+  },
+  titularInst: function(cell, data, index) {
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      label = "";
+
+    if (data['t'])
+      label += data['t'];
+
+    if (data['l'])
+      label += "" + data['l'] + "";
+
+    wrapper.text(label);
+    cell.empty().data("editable", false).append(wrapper);
+  },
+  titularPessoa: function(cell, data, index) {
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      label = "";
+
+    if (data['t'])
+      label += data['t'];
+
+    if (data['l'])
+      label += " (" + data['l'] + ")";
+
+    wrapper.text(label);
+    cell.empty().data("editable", false).append(wrapper);
+  },
+  autor: function(cell, data, index) {
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      label = "";
+
+    if (data['t'])
+      label += data['t'];
+
+    if (data['l'])
+      label += " (" + data['l'] + ")";
+
+    wrapper.text(label);
+    cell.empty().data("editable", false).append(wrapper);
+  },
+  setor: function(cell, data, index) {
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      label = "";
+
+    if (data['l'])
+      label += data['l'];
+
+    wrapper.text(label);
+    cell.empty().append(wrapper);
+  },
+  programa: function(cell, data, index) {
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      label = "";
+
+    if (data['l'])
+      label += data['l'];
+
+    wrapper.text(label);
+    cell.empty().append(wrapper);
+  },
+  area: function(cell, data, index) {
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      label = "";
+
+    if (data['l'])
+      label += data['l'];
+
+    wrapper.text(label);
+    cell.empty().append(wrapper);
+  },
+  palavra: function(cell, data, index) {
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      label = "";
+
+    if (data['l'])
+      label += data['l'];
+
+    wrapper.text(label);
+    cell.empty().append(wrapper);
+  },
+    titularInstControl: function (cell, data, index) {
+        if (data.staValidado != "S") {
+            if (!data['l']) return false;
+            if (!data['deletable']) return false;
+
+            var wrapper = $("<div class='cell-wrapper'></div>"),
+                trashHint = "clique para excluir a instituição",
+                trashBtn = $("<img />").attr({
+                    src: "/images/estatico/imagens/lixeira.gif", alt: trashHint, title: trashHint
+                }).bind("click", function () {
+                    titularInstGrid.getProvider().splice(index, 1);
+                    titularInstGrid.generate();
+                });
+
+            wrapper.append(trashBtn);
+
+            cell.addClass("hidden").empty().append(wrapper);
+        }
+    },
+  titularPessoaControl: function(cell, data, index) {
+   if(data.staValidado != "S"){
+    if (!data['l']) return false;
+   // if (!data['deletable']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      trashHint = "clique para excluir o pesquisador",
+      trashBtn = $("<img />").attr({src: "/images/estatico/imagens/lixeira.gif", alt: trashHint, title: trashHint}).bind("click", function(){
+       titularPessoaGrid.getProvider().splice(index, 1);
+       titularPessoaGrid.generate();
+
+      });
+
+    wrapper.append(trashBtn);
+
+    cell.addClass("hidden").empty().append(wrapper);
+    }
+  },
+  autorControl: function(cell, data, index) {
+    if (!data['l']) return false;
+    if (!data['deletable']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      trashHint = "clique para excluir o pesquisador",
+      trashBtn = $("<img />").attr({src: "/images/estatico/imagens/lixeira.gif", alt: trashHint, title: trashHint}).bind("click", function(){
+        autorGrid.getProvider().splice(index, 1);
+        autorGrid.generate();
+      });
+
+    wrapper.append(trashBtn);
+
+    cell.addClass("hidden").empty().append(wrapper);
+  },
+  setorControl: function(cell, data, index) {
+    if (!data['l']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      trashHint = "clique para excluir o setor",
+      trashBtn = $("<img />").attr({src: "/images/estatico/imagens/lixeira.gif", alt: trashHint, title: trashHint}).bind("click", function(){
+        setorGrid.getProvider().splice(index, 1);
+        setorGrid.generate();
+      });
+
+    wrapper.append(trashBtn);
+
+    cell.addClass("hidden").empty().append(wrapper);
+  },
+  programaControl: function(cell, data, index) {
+    if (!data['l']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      trashHint = "clique para excluir o programa",
+      trashBtn = $("<img />").attr({src: "/images/estatico/imagens/lixeira.gif", alt: trashHint, title: trashHint}).bind("click", function(){
+        programaGrid.getProvider().splice(index, 1);
+        programaGrid.generate();
+      });
+
+    wrapper.append(trashBtn);
+
+    cell.addClass("hidden").empty().append(wrapper);
+  },
+  areaControl: function(cell, data, index) {
+    if (!data['l']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      trashHint = "clique para excluir a área",
+      trashBtn = $("<img />").attr({src: "/images/estatico/imagens/lixeira.gif", alt: trashHint, title: trashHint}).bind("click", function(){
+        areaGrid.getProvider().splice(index, 1);
+        areaGrid.generate();
+      });
+
+    wrapper.append(trashBtn);
+
+    cell.addClass("hidden").empty().append(wrapper);
+  },
+  palavraControl: function(cell, data, index) {
+    if (!data['l']) return false;
+
+    var wrapper = $("<div class='cell-wrapper'></div>"),
+      trashHint = "clique para excluir a palavra-chave",
+      trashBtn = $("<img />").attr({src: "/images/estatico/imagens/lixeira.gif", alt: trashHint, title: trashHint}).bind("click", function(){
+        palavraGrid.getProvider().splice(index, 1);
+        palavraGrid.generate();
+      });
+
+    wrapper.append(trashBtn);
+
+    cell.addClass("hidden").empty().append(wrapper);
+  }
+
+};
+
+var edit = {
+  titularInst:function(cell, data, index) {
+
+    var acceptFn = function() {
+
+      var itemData = titularInstSuggest.getSelectedItem().data("data"),
+        label = input.val().removeAccents().toLowerCase(),
+        provider = titularInstGrid.getProvider(),
+        isValid;
+
+      if (provider.length > titularInstNumMaxRegistros) {
+        alert("O número máximo de registros foi atingido");
+        return false;
+      }
+
+      if (itemData) {
+
+        isValid = validate.titularInstGrid(provider, itemData);
+
+        if (isValid) {
+          update.grid(data, itemData, titularInstGrid);
+        }
+
+      }
+
+      else {
+
+        if (titularInstGlobalData) {
+
+          isValid = validate.titularInstGrid(provider, titularInstGlobalData);
+
+          if (isValid) {
+            update.grid(data, titularInstGlobalData, titularInstGrid);
+            titularInstWin.hide();
+            titularInstTodosWin.hide();
+          }
+
+          titularInstGlobalData = null;
+
+        }
+
+        else {
+
+          for (var x=0; x<provider.length; x++) {
+            var it = provider[x];
+
+            if (!it["l"] || !it["t"]) {
+              continue;
+            }
+
+            var nomPattern = new RegExp("(^" + it["l"].removeAccents() + "$)", "gi"),
+              citPattern = new RegExp("(^" + it["t"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label),
+              citEqual = citPattern.test(label);
+
+            if (nomEqual || citEqual) {
+              alert("Já existe um registro com esse nome/citação");
+              return false;
+            }
+
+          }
+
+          var match = self.parent.titularInstDP.search(label, "l");
+
+          for (var x=0; x<match.length; x++) {
+            var nomPattern = new RegExp("(^" + match[x]["l"].removeAccents() + "$)", "gi"),
+              citPattern = new RegExp("(^" + match[x]["t"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label),
+              citEqual = citPattern.test(label);
+
+            if (nomEqual || citEqual) {
+              titularInstGlobalData = match[x];
+              input.trigger("accept");
+              return false;
+            }
+
+          }
+
+          titularInstWin.show();
+
+        }
+
+      }
+
+      return false;
+    };
+
+    var div = cell.find("div").empty();
+
+    // $("<div />").text("Instruções de preenchimento").css({display:"block"}).appendTo(div);
+
+    titularInstSuggest = $.suggest({
+      attr: {label: "l"},
+      provider: self.parent.titularInstDP,
+      render: div,
+      onKeyEnter: function() {
+        titularInstFocus = true;
+        input.trigger("accept");
+      },
+      onItemClick: function(data) {
+        titularInstFocus = true;
+        titularInstGlobalData = data;
+        input.trigger("accept");
+      },
+      createItemFunction: function(o, suggest) {
+        var data = o.data,
+          qs = suggest.getQueryString(),
+          pattern = new RegExp(qs, "ig"),
+          label = (data["c"] == "" || data["c"] < 0) ? "<span> " : "";
+
+        label += (data["l"] + " (" + data["t"] + ")").replace(pattern, "<b>" + qs + "</b>");
+
+        if (data["c"] == "" || data["c"] < 0) {
+          label += "</span>";
+        }
+
+        return $("<a></a>").attr("href", "javascript:void(0)").html(label);
+      },
+      searchFunction: function(o, suggest) {
+        var provider = o.provider,
+          label = suggest.getAttr("label"),
+          pattern = suggest.getRegExp(suggest.getQueryString());
+
+        $.each(provider, function(i, data){
+
+          var lb = data[label].removeAccents();
+
+          if (pattern.test(lb)) {
+            if (pattern.exec(lb)[1]) o.equal.push(data);
+            else if (pattern.exec(lb)[2]) o.begin.push(data);
+            else if (pattern.exec(lb)[3]) o.any.push(data);
+          }
+
+        });
+      }
+    });
+
+    // copiar - inicio
+
+    var handler = {
+      incluirClick:function() {
+        titularInstGlobalData = data;
+        titularCadInstWin.show();
+        titularCadInstWin.request('pkg_titular_inst_generica.sele_inst?f_ctr=O&f_cod=0433161426');
+      },
+      todosClick:function() {
+        titularInstTodosWin.show();
+        titularInstTodosWin.request('pkg_titular_inst_generica.sele_inst?f_cod=0433161426');
+
+      },
+      inputFocus:function() {
+        var input = $(this);
+        if (input.val() == titularInstPrompt) {
+          input.val("").css(focusCSS);
+        }
+      },
+      inputBlur:function() {
+        var input = $(this);
+        if ($.trim(input.val()) == "") {
+          input.val(titularInstPrompt).css(blurCSS);
+        }
+      }
+    };
+
+    var input = titularInstSuggest.getInput().val(titularInstPrompt).bind({focus:handler.inputFocus, blur:handler.inputBlur}).css(blurCSS).attr("maxlength","60"),
+      todos = $("<a href='javascript:void(0)' />").click(handler.todosClick).html("Selecionar").css({marginLeft:"5px"}),
+      separator = $("<b>|</b>").css({marginLeft:"5px"}),
+      incluir = $("<a href='javascript:void(0)' />").click(handler.incluirClick).html("Incluir nova").css({marginLeft:"5px"});
+ titularInstSuggest.getWrapper().width(cell.width() - 140).append(todos).append(separator).append(incluir);
+
+    // copiar - fim
+
+    input.bind("accept", acceptFn);
+
+    if (data["l"])
+      titularInstSuggest.setValue(data["l"]);
+
+    if (titularInstFocus) {
+      input.focus();
+      titularInstFocus = false;
+    }
+
+  },
+  titularPessoa:function(cell, data, index) {
+
+    var acceptFn = function() {
+
+      var itemData = titularPessoaSuggest.getSelectedItem().data("data"),
+        label = input.val().removeAccents().toLowerCase(),
+        provider = titularPessoaGrid.getProvider(),
+        isValid;
+
+      if (provider.length > titularPessoaNumMaxRegistros) {
+        alert("O número máximo de registros foi atingido");
+        return false;
+      }
+
+      if (itemData) {
+
+        isValid = validate.titularPessoaGrid(provider, itemData);
+
+        if (isValid) {
+          update.grid(data, itemData, titularPessoaGrid);
+        }
+
+      }
+
+      else {
+
+        if (titularPessoaGlobalData) {
+
+          isValid = validate.titularPessoaGrid(provider, titularPessoaGlobalData);
+
+          if (isValid) {
+            update.grid(data, titularPessoaGlobalData, titularPessoaGrid);
+            titularPessoaWin.hide();
+            titularPessoaTodosWin.hide();
+          }
+
+          titularPessoaGlobalData = null;
+
+        }
+
+        else {
+
+          for (var x=0; x<provider.length; x++) {
+            var it = provider[x];
+
+            if (!it["l"] || !it["t"]) {
+              continue;
+            }
+
+            var nomPattern = new RegExp("(^" + it["l"].removeAccents() + "$)", "gi"),
+              citPattern = new RegExp("(^" + it["t"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label),
+              citEqual = citPattern.test(label);
+
+            if (nomEqual || citEqual) {
+              alert("Já existe um registro com esse nome/citação");
+              return false;
+            }
+
+          }
+
+          var match = self.parent.titularPessoaDP.search(label, "l");
+
+          for (var x=0; x<match.length; x++) {
+            var nomPattern = new RegExp("(^" + match[x]["l"].removeAccents() + "$)", "gi"),
+              citPattern = new RegExp("(^" + match[x]["t"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label),
+              citEqual = citPattern.test(label);
+
+            if (nomEqual || citEqual) {
+              titularPessoaGlobalData = match[x];
+              input.trigger("accept");
+              return false;
+            }
+
+          }
+
+          titularPessoaWin.show();
+
+        }
+
+      }
+
+      return false;
+    };
+
+    var div = cell.find("div").empty();
+
+    // $("<div />").text("Instruções de preenchimento").css({display:"block"}).appendTo(div);
+
+    titularPessoaSuggest = $.suggest({
+      attr: {label: "l"},
+      provider: self.parent.titularPessoaDP,
+      render: div,
+      onKeyEnter: function() {
+        titularPessoaFocus = true;
+        input.trigger("accept");
+      },
+      onItemClick: function(data) {
+        titularPessoaFocus = true;
+        titularPessoaGlobalData = data;
+        input.trigger("accept");
+      },
+      createItemFunction: function(o, suggest) {
+        var data = o.data,
+          qs = suggest.getQueryString(),
+          pattern = new RegExp(qs, "ig"),
+          label = (data["c"] == "" || data["c"] < 0) ? "<span> " : "";
+
+        label += (data["l"] + " (" + data["t"] + ")").replace(pattern, "<b>" + qs + "</b>");
+
+        if (data["c"] == "" || data["c"] < 0) {
+          label += "</span>";
+        }
+
+        return $("<a></a>").attr("href", "javascript:void(0)").html(label);
+      },
+      searchFunction: function(o, suggest) {
+        var provider = o.provider,
+          label = suggest.getAttr("label"),
+          pattern = suggest.getRegExp(suggest.getQueryString());
+
+        $.each(provider, function(i, data){
+
+          var lb = data[label].removeAccents();
+
+          if (pattern.test(lb)) {
+            if (pattern.exec(lb)[1]) o.equal.push(data);
+            else if (pattern.exec(lb)[2]) o.begin.push(data);
+            else if (pattern.exec(lb)[3]) o.any.push(data);
+          }
+
+        });
+      }
+    });
+
+    // copiar - inicio
+
+    var handler = {
+      incluirClick:function() {
+        titularPessoaGlobalData = data;
+        titularPessoaWin.show();
+      },
+      todosClick:function() {
+        titularPessoaTodosWin.show();
+      },
+      inputFocus:function() {
+        var input = $(this);
+        if (input.val() == titularPessoaPrompt) {
+          input.val("").css(focusCSS);
+        }
+      },
+      inputBlur:function() {
+        var input = $(this);
+        if ($.trim(input.val()) == "") {
+          input.val(titularPessoaPrompt).css(blurCSS);
+        }
+      }
+    };
+
+    var input = titularPessoaSuggest.getInput().val(titularPessoaPrompt).bind({focus:handler.inputFocus, blur:handler.inputBlur}).css(blurCSS).attr("maxlength","60"),
+      todos = $("<a href='javascript:void(0)' />").click(handler.todosClick).html("Listar todas").css({marginLeft:"5px"}),
+      separator = $("<b>|</b>").css({marginLeft:"5px"}),
+      incluir = $("<a href='javascript:void(0)' />").click(handler.incluirClick).html("Incluir nova").css({marginLeft:"5px"});
+
+
+    titularPessoaSuggest.getWrapper().width(cell.width() - 140).append(todos).append(separator).append(incluir);
+
+    // copiar - fim
+
+    input.bind("accept", acceptFn);
+
+    if (data["l"])
+      titularPessoaSuggest.setValue(data["l"]);
+
+    if (titularPessoaFocus) {
+      input.focus();
+      titularPessoaFocus = false;
+    }
+
+  },
+
+
+    titular: function(cell, data, index) {
+      cell.empty();
+
+      var selectProvider = [{"l":"Selecione"}, {"l":"sim","v":"s"}, {"l":"não","v":"n"}],
+        select = createDynamicSelect(selectProvider).width(cell.width()).bind("change", function(){
+  data['tit'] = $(this).val();
+          autorGrid.generate();
+        });
+
+       var rows = autorGrid.getRows();
+
+       rows.each(function(i, it){
+         if (i != index)
+            var cell = $(it).find("td:eq(2)").trigger("render");
+       });
+
+      cell.append(select);
+    },
+  
+
+
+
+  autor:function(cell, data, index) {
+
+    var acceptFn = function() {
+
+      var itemData = autorSuggest.getSelectedItem().data("data"),
+        label = input.val().removeAccents().toLowerCase(),
+        provider = autorGrid.getProvider(),
+        isValid;
+
+      if (provider.length > autorNumMaxRegistros) {
+        alert("O número máximo de registros foi atingido");
+        return false;
+      }
+
+      if (itemData) {
+
+        isValid = validate.autorGrid(provider, itemData);
+
+        if (isValid) {
+          update.grid(data, itemData, autorGrid);
+        }
+
+      }
+
+      else {
+
+        if (autorGlobalData) {
+
+          isValid = validate.autorGrid(provider, autorGlobalData);
+
+          if (isValid) {
+            update.grid(data, autorGlobalData, autorGrid);
+            autorWin.hide();
+            autorTodosWin.hide();
+          }
+
+          autorGlobalData = null;
+
+        }
+
+        else {
+
+          for (var x=0; x<provider.length; x++) {
+            var it = provider[x];
+
+            if (!it["l"] || !it["t"]) {
+              continue;
+            }
+
+            var nomPattern = new RegExp("(^" + it["l"].removeAccents() + "$)", "gi"),
+              citPattern = new RegExp("(^" + it["t"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label),
+              citEqual = citPattern.test(label);
+
+            if (nomEqual || citEqual) {
+              alert("Já existe um registro com esse nome/citação");
+              return false;
+            }
+
+          }
+
+          var match = self.parent.autorDP.search(label, "l");
+
+          for (var x=0; x<match.length; x++) {
+            var nomPattern = new RegExp("(^" + match[x]["l"].removeAccents() + "$)", "gi"),
+              citPattern = new RegExp("(^" + match[x]["t"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label),
+              citEqual = citPattern.test(label);
+
+            if (nomEqual || citEqual) {
+              autorGlobalData = match[x];
+              input.trigger("accept");
+              return false;
+            }
+
+          }
+
+          autorWin.show();
+
+        }
+
+      }
+
+      return false;
+    };
+
+    var div = cell.find("div").empty();
+
+    // $("<div />").text("Instruções de preenchimento").css({display:"block"}).appendTo(div);
+
+    autorSuggest = $.suggest({
+      attr: {label: "l"},
+      provider: self.parent.autorDP,
+      render: div,
+      onKeyEnter: function() {
+        autorFocus = true;
+        input.trigger("accept");
+      },
+      onItemClick: function(data) {
+        autorFocus = true;
+        autorGlobalData = data;
+        input.trigger("accept");
+      },
+      createItemFunction: function(o, suggest) {
+        var data = o.data,
+          qs = suggest.getQueryString(),
+          pattern = new RegExp(qs, "ig"),
+          label = (data["c"] == "" || data["c"] < 0) ? "<span> " : "";
+
+        label += (data["l"] + " (" + data["t"] + ")").replace(pattern, "<b>" + qs + "</b>");
+
+        if (data["c"] == "" || data["c"] < 0) {
+          label += "</span>";
+        }
+
+        return $("<a></a>").attr("href", "javascript:void(0)").html(label);
+      },
+      searchFunction: function(o, suggest) {
+        var provider = o.provider,
+          label = suggest.getAttr("label"),
+          pattern = suggest.getRegExp(suggest.getQueryString());
+
+        $.each(provider, function(i, data){
+
+          var lb = data[label].removeAccents();
+
+          if (pattern.test(lb)) {
+            if (pattern.exec(lb)[1]) o.equal.push(data);
+            else if (pattern.exec(lb)[2]) o.begin.push(data);
+            else if (pattern.exec(lb)[3]) o.any.push(data);
+          }
+
+        });
+      }
+    });
+
+    // copiar - inicio
+
+    var handler = {
+      incluirClick:function() {
+        autorGlobalData = data;
+        autorWin.show();
+      },
+      todosClick:function() {
+        autorTodosWin.show();
+        treeAutor.generate();
+      },
+      inputFocus:function() {
+        var input = $(this);
+        if (input.val() == autorPrompt) {
+          input.val("").css(focusCSS);
+        }
+      },
+      inputBlur:function() {
+        var input = $(this);
+        if ($.trim(input.val()) == "") {
+          input.val(autorPrompt).css(blurCSS);
+        }
+      }
+    };
+
+    var input = autorSuggest.getInput().val(autorPrompt).bind({focus:handler.inputFocus, blur:handler.inputBlur}).css(blurCSS).attr("maxlength","60"),
+      todos = $("<a href='javascript:void(0)' />").click(handler.todosClick).html("Listar todos").css({marginLeft:"5px"}),
+      separator = $("<b>|</b>").css({marginLeft:"5px"}),
+      incluir = $("<a href='javascript:void(0)' />").click(handler.incluirClick).html("Incluir novo").css({marginLeft:"5px"});
+
+      autorSuggest.getWrapper().width(cell.width() - 140).append(todos).append(separator).append(incluir);
+
+    // copiar - fim
+    
+input.bind("accept", acceptFn);
+
+
+    if (data["l"])
+      autorSuggest.setValue(data["l"]);
+
+    if (autorFocus) {
+      input.focus();
+      autorFocus = false;
+    }
+
+  },
+  setor:function(cell, data, index) {
+
+    var acceptFn = function() {
+
+      var itemData = setorSuggest.getSelectedItem().data("data"),
+        label = input.val().removeAccents().toLowerCase(),
+        provider = setorGrid.getProvider(),
+        isValid;
+
+      if (provider.length > setorNumMaxRegistros) {
+        alert("O número máximo de registros foi atingido");
+        return false;
+      }
+
+      if (itemData) {
+
+        isValid = validate.setorGrid(provider, itemData);
+
+        if (isValid) {
+          update.grid(data, itemData, setorGrid);
+        }
+
+      }
+
+      else {
+
+        if (setorGlobalData) {
+
+          isValid = validate.setorGrid(provider, setorGlobalData);
+
+          if (isValid) {
+            update.grid(data, setorGlobalData, setorGrid);
+            setorTodosWin.hide();
+          }
+
+          setorGlobalData = null;
+
+        }
+
+        else {
+
+          for (var x=0; x<provider.length; x++) {
+            var it = provider[x];
+
+            if (!it["l"]) {
+              continue;
+            }
+
+            var nomPattern = new RegExp("(^" + it["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              alert("Setor já cadastrado");
+              return false;
+            }
+
+          }
+
+          var match = self.parent.setorDP.search(label, "l");
+
+          for (var x=0; x<match.length; x++) {
+            var nomPattern = new RegExp("(^" + match[x]["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              setorGlobalData = match[x];
+              input.trigger("accept");
+              return false;
+            }
+
+          }
+
+        }
+
+      }
+
+      return false;
+    };
+
+    var div = cell.find("div").empty();
+
+    setorSuggest = $.suggest({
+      attr: {label: "l", children: "b"},
+      provider: self.parent.setorDP,
+      render: div,
+      // erro
+      onKeyEnter: function() {
+        setorFocus = true;
+        input.trigger("accept");
+      },
+      onItemClick: function(data) {
+        setorFocus = true;
+        setorGlobalData = data;
+        input.trigger("accept");
+      }
+    });
+
+    var handler = {
+      todosClick:function() {
+        setorTodosWin.show();
+      },
+      inputFocus:function() {
+        var input = $(this);
+        if (input.val() == setorPrompt) {
+          input.val("").css(focusCSS);
+        }
+      },
+      inputBlur:function() {
+        var input = $(this);
+        if ($.trim(input.val()) == "") {
+          input.val(setorPrompt).css(blurCSS);
+        }
+      }
+    };
+
+    var input = setorSuggest.getInput().val(setorPrompt).bind({focus:handler.inputFocus, blur:handler.inputBlur}).css(blurCSS),
+        todos = $("<a href='javascript:void(0)' />").click(handler.todosClick).html("Listar todos").css({marginLeft:"5px"});
+
+    setorSuggest.getWrapper().width(cell.width() - 75).append(todos);
+
+    input.bind("accept", acceptFn);
+
+    if (data["l"])
+      setorSuggest.setValue(data["l"]);
+
+    if (setorFocus) {
+      input.focus();
+      setorFocus = false;
+    }
+
+  },
+  programa:function(cell, data, index) {
+
+    var acceptFn = function() {
+
+      var itemData = programaSuggest.getSelectedItem().data("data"),
+        label = input.val().removeAccents().toLowerCase(),
+        provider = programaGrid.getProvider(),
+        isValid;
+
+      if (provider.length > programaNumMaxRegistros) {
+        alert("O número máximo de registros foi atingido");
+        return false;
+      }
+
+      if (itemData) {
+
+        isValid = validate.programaGrid(provider, itemData);
+
+        if (isValid) {
+          update.grid(data, itemData, programaGrid);
+        }
+
+      }
+
+      else {
+
+        if (programaGlobalData) {
+
+          isValid = validate.programaGrid(provider, programaGlobalData);
+
+          if (isValid) {
+            update.grid(data, programaGlobalData, programaGrid);
+            programaTodosWin.hide();
+          }
+
+          programaGlobalData = null;
+
+        }
+
+        else {
+
+          for (var x=0; x<provider.length; x++) {
+            var it = provider[x];
+
+            if (!it["l"]) {
+              continue;
+            }
+
+            var nomPattern = new RegExp("(^" + it["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              alert("Já Programa já cadastrado");
+              return false;
+            }
+
+          }
+
+          var match = programaDP.search(label, "l");
+
+          for (var x=0; x<match.length; x++) {
+            var nomPattern = new RegExp("(^" + match[x]["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              programaGlobalData = match[x];
+              input.trigger("accept");
+              return false;
+            }
+
+          }
+
+        }
+
+      }
+
+      return false;
+    };
+
+    var div = cell.find("div").empty();
+
+    programaSuggest = $.suggest({
+      attr: {label: "l", children: "b"},
+      provider: programaDP,
+      render: div,
+      // erro
+      onKeyEnter: function() {
+        programaFocus = true;
+        input.trigger("accept");
+      },
+      onItemClick: function(data) {
+        programaFocus = true;
+        programaGlobalData = data;
+        input.trigger("accept");
+      }
+    });
+
+    var handler = {
+      todosClick:function() {
+        programaTodosWin.show();
+      },
+      inputFocus:function() {
+        var input = $(this);
+        if (input.val() == programaPrompt) {
+          input.val("").css(focusCSS);
+        }
+      },
+      inputBlur:function() {
+        var input = $(this);
+        if ($.trim(input.val()) == "") {
+          input.val(programaPrompt).css(blurCSS);
+        }
+      }
+    };
+
+    var input = programaSuggest.getInput().val(programaPrompt).bind({focus:handler.inputFocus, blur:handler.inputBlur}).css(blurCSS),
+        todos = $("<a href='javascript:void(0)' />").click(handler.todosClick).html("Listar todos").css({marginLeft:"5px"});
+
+    programaSuggest.getWrapper().width(cell.width() - 75).append(todos);
+
+    input.bind("accept", acceptFn);
+
+    if (data["l"])
+      programaSuggest.setValue(data["l"]);
+
+    if (programaFocus) {
+      input.focus();
+      programaFocus = false;
+    }
+
+  },
+  area:function(cell, data, index) {
+
+    var acceptFn = function(){
+
+      var itemData = areaSuggest.getSelectedItem().data("data"),
+        label = jQuery.trim(input.val().removeAccents().toLowerCase()),
+        provider = areaGrid.getProvider(),
+        isValid;
+
+      if (provider.length > areaNumMaxRegistros) {
+        alert("O número máximo de registros foi atingido. Somente é permitida à inclusão de "+ areaNumMaxRegistros +" registros." );
+        return false;
+      }
+
+      if (itemData) {
+
+        isValid = validate.areaGrid(provider, itemData);
+
+        if (isValid) {
+          update.grid(data, itemData, areaGrid);
+        }
+
+      }
+
+      else {
+
+        if (areaGlobalData) {
+
+          isValid = validate.areaGrid(provider, areaGlobalData);
+
+          if (isValid) {
+            update.grid(data, areaGlobalData, areaGrid);
+            areaWin.hide();
+            areaTodosWin.hide();
+          }
+
+          areaGlobalData = null;
+
+        }
+
+        else {
+
+          for (var x=0; x<provider.length; x++) {
+            var it = provider[x];
+
+            if (!it["l"]) {
+              continue;
+            }
+
+            var nomPattern = new RegExp("(^" + it["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              alert("Área já cadastrada");
+              return false;
+            }
+
+          }
+
+          // todo
+
+          var match = self.parent.areaDP.search(label, "l");
+
+          for (var x=0; x<match.length; x++) {
+            var nomPattern = new RegExp("(^" + match[x]["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              areaGlobalData = match[x];
+              input.trigger("accept");
+              return false;
+            }
+
+          }
+
+          areaWin.show();
+
+        }
+
+      }
+
+      return false;
+    };
+
+    var div = cell.find("div").empty();
+
+    areaSuggest = $.suggest({
+      attr: {label: "l", children: "b"},
+      provider: self.parent.areaDP,
+      render: div,
+      onKeyEnter: function() {
+
+        if (index >= 0 || input.val().length >= areaNumMinChar) {
+          areaFocus = true;
+          input.trigger("accept");
+        }
+
+      },
+      onItemClick: function(data) {
+        areaFocus = true;
+        areaGlobalData = data;
+        input.trigger("accept");
+      },
+      searchFunction: function(o, suggest) {
+        var provider = o.provider,
+            label = suggest.getAttr("label"),
+            children = suggest.getAttr("children"),
+            pattern = suggest.getRegExp(suggest.getQueryString());
+
+        $.each(provider, function(i, data){
+
+          var lb = data[label].removeAccents();
+
+          if (data.n != 1) {
+
+            if (pattern.test(lb)) {
+              if (pattern.exec(lb)[1]) o.equal.push(data);
+              else if (pattern.exec(lb)[2]) o.begin.push(data);
+              else if (pattern.exec(lb)[3]) o.any.push(data);
+            }
+
+          }
+
+          if (data[children])
+            suggest.search({provider: data[children], equal: o.equal, begin: o.begin, any: o.any});
+        });
+
+      },
+      createItemFunction: function(o, suggest) {
+        var data = o.data,
+            qs = suggest.getQueryString(),
+            pattern = new RegExp(qs, "i"),
+            label = suggest.getAttr("label"),
+            lb = data["n"] == 2 ? "" : data["n"] == 3 ? "&nbsp;&nbsp;&nbsp;" : "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+
+            lb += data[label].replace(pattern, "<b>" + qs + "</b>");
+
+        return $("<a></a>").attr("href", "javascript:void(0)").html(lb);
+      }
+    });
+
+    var handler = {
+      incluirClick:function() {
+        areaGlobalData = data;
+        areaWin.show();
+      },
+      todosClick:function() {
+        areaTodosWin.show();
+      },
+      inputFocus:function() {
+        var input = $(this);
+        if (input.val() == areaPrompt) {
+          input.val("").css(focusCSS);
+        }
+      },
+      inputBlur:function() {
+        var input = $(this);
+        if ($.trim(input.val()) == "") {
+          input.val(areaPrompt).css(blurCSS);
+        }
+      }
+    };
+
+    var input = areaSuggest.getInput().val(areaPrompt).bind({focus:handler.inputFocus, blur:handler.inputBlur}).css(blurCSS).attr("maxlength","86"),
+      todos = $("<a href='javascript:void(0)' />").click(handler.todosClick).html("Listar todos").css({marginLeft:"5px"}),
+      separator = $("<b>|</b>").css({marginLeft:"5px"}),
+      incluir = $("<a href='javascript:void(0)' />").click(handler.incluirClick).html("Incluir nova").css({marginLeft:"5px"});
+
+    areaSuggest.getWrapper().width(cell.width() - 140).append(todos).append(separator).append(incluir);
+
+    input.bind("accept", acceptFn);
+
+    if (data["l"])
+      areaSuggest.setValue(data["l"]);
+
+    if (areaFocus) {
+      input.focus();
+      areaFocus = false;
+    }
+
+  },
+  palavra: function(cell, data, index) {
+
+    var acceptFn = function(){
+
+      var itemData = palavraSuggest.getSelectedItem().data("data"),
+          label = input.val().removeAccents().toLowerCase(),
+          provider = palavraGrid.getProvider(),
+          isValid;
+
+      if (provider.length > palavraNumMaxRegistros) {
+        alert("O número máximo de registros foi atingido");
+        return false;
+      }
+
+      if (itemData) {
+
+        isValid = validate.palavraGrid(provider, itemData);
+
+        if (isValid) {
+          update.grid(data, itemData, palavraGrid);
+        }
+
+      }
+
+      else {
+
+        if (palavraGlobalData) {
+
+          isValid = validate.palavraGrid(provider, palavraGlobalData);
+
+          if (isValid) {
+            update.grid(data, palavraGlobalData, palavraGrid);
+            palavraTodosWin.hide();
+            palavraWin.hide();
+          }
+
+          palavraGlobalData = null;
+
+        }
+
+        else {
+
+          for (var x=0; x<provider.length; x++) {
+            var it = provider[x];
+
+            if (!it["l"]) {
+              continue;
+            }
+
+            var nomPattern = new RegExp("(^" + it["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              alert("Palavra já cadastrada");
+              return false;
+            }
+
+          }
+
+          var match = self.parent.palavraDP.search(label, "l");
+
+          for (var x=0; x<match.length; x++) {
+            var nomPattern = new RegExp("(^" + match[x]["l"].removeAccents() + "$)", "gi"),
+              nomEqual = nomPattern.test(label);
+
+            if (nomEqual) {
+              palavraGlobalData = match[x];
+              input.trigger("accept");
+              return false;
+            }
+
+          }
+
+          palavraWin.show();
+
+        }
+
+      }
+
+      return false;
+    };
+
+    var div = cell.find("div").empty();
+
+    palavraSuggest = $.suggest({
+      attr: {label: "l", children: "b"},
+      provider: self.parent.palavraDP,
+      render: div,
+      onKeyEnter: function() {
+        if (input.val().length >= palavraNumMinChar) {
+          palavraFocus = true;
+          input.trigger("accept");
+        }
+      },
+      onItemClick: function(data) {
+        palavraFocus = true;
+        palavraGlobalData = data;
+        input.trigger("accept");
+      },
+
+      searchFunction: function(o, suggest) {
+        var provider = o.provider,
+          label = suggest.getAttr("label"),
+          children = suggest.getAttr("children"),
+          pattern = suggest.getRegExp(suggest.getQueryString());
+
+        $.each(provider, function(i, data){
+
+          var lb = data[label].removeAccents();
+
+            if (pattern.test(lb)) {
+              if (pattern.exec(lb)[1]) o.equal.push(data);
+              else if (pattern.exec(lb)[2]) o.begin.push(data);
+              else if (pattern.exec(lb)[3]) o.any.push(data);
+            }
+
+          if (data[children])
+            suggest.search({provider: data[children], equal: o.equal, begin: o.begin, any: o.any});
+        });
+      }
+    });
+
+    // destino inicio - copiar
+
+    var handler = {
+      incluirClick:function() {
+        palavraGlobalData = data;
+        palavraWin.show();
+      },
+      todosClick:function() {
+        palavraTodosWin.show();
+      },
+      inputFocus:function() {
+        var input = $(this);
+        if (input.val() == palavraPrompt) {
+          input.val("").css(focusCSS);
+        }
+      },
+      inputBlur:function() {
+        var input = $(this);
+        if ($.trim(input.val()) == "") {
+          input.val(palavraPrompt).css(blurCSS);
+        }
+      }
+    };
+
+    var input = palavraSuggest.getInput().val(palavraPrompt).bind({focus:handler.inputFocus, blur:handler.inputBlur}).css(blurCSS).attr("maxlength","50"),
+      todos = $("<a href='javascript:void(0)' />").click(handler.todosClick).html("Listar todos").css({marginLeft:"5px"}),
+      separator = $("<b>|</b>").css({marginLeft:"5px"}),
+      incluir = $("<a href='javascript:void(0)' />").click(handler.incluirClick).html("Incluir nova").css({marginLeft:"5px"});
+
+    palavraSuggest.getWrapper().width(cell.width() - 140).append(todos).append(separator).append(incluir);
+
+    // destino copiar - fim
+
+    input.bind("accept", acceptFn);
+    if (data["l"])
+
+      palavraSuggest.setValue(data["l"]);
+
+
+    if (palavraFocus) {
+      input.focus();
+      palavraFocus = false;
+    }
+
+  }
+}
+
+</script>
+
+
+<br>
+
+<script>
+/*
+*	TITULAR_PESSOA
+*/
+
+var p=new Array();
+var nome=new Array()
+var ret="";
+var idx=0;
+
+p[1] = "DA"; p[2] = "DE"; p[3] = "DAS"; p[4]=  "DI"; p[5] = "DO"; p[6] = "DOS"; p[7] = "DU"; p[8] = "DEL";
+ex="#JUNIOR#NETO#JR#JR.#FILHO#Fº#SOBRINHO#SOBRINHA#FILHA#NETA#";
+
+
+function trim(str) {
+  i=0;
+  while (((str.substring(i,i+1))== " ")&&(i < str.length)) i++;
+  aux=str.substring(i,str.length); i=aux.length;
+  while (((aux.substring(i-1,i)) == " ")&&(i>1)) i--;
+  aux=aux.substring(0,i);
+  return aux;
+}
+
+
+var vgerou = false;
+function gerar(nmeAutor){
+if(vgerou || nmeAutor.indexOf(",") > -1 ){
+          return;
+}
+ ret="";
+ if ((v=trim(nmeAutor))!="") {
+   ret=geraMatriz(filtraAcentos(filtraBrancos(v)));
+   return inversao();
+   vgerou = true;
+// } else {
+//   alert("Informe o Nome do  autor");
+ }
+ return;
+}
+
+function filtraBrancos(arg){
+  res=""; i=0;
+  while(i<=arg.length){
+    if (arg.substring(i,i+1)==" ") {
+      res+=arg.substring(i,i+1);  i++;
+      while (((arg.substring(i,i+1))== " ")&&(i < arg.length)) i++;
+    }
+   res+=arg.substring(i,i+1);  i++;
+  }
+  return res;
+}
+
+function filtraAcentos( arg ) {
+  texto = arg + "";
+  novoTexto = "";
+  var c,  i;
+  sbChar = "ÁÃÀÄÂáãàäâÉÈËÊéèëêÍÌÎÏìîïíÓÒÔÕÖóòôõöÚÙÜÛúûüùÇçÑñ"
+  eqChar = "AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn";
+  exChar = "+_*" + unescape("%7E%7B%7D%A8%5E%28%29%26%25%24%5B%5D@%B4%60%7C%5C%3F%B0%BA%AA%A7%23%21%22%27");
+
+   for( var j = 0; j < texto.length; j++ ) {
+         c = texto.charAt( j );
+         if( exChar.indexOf( c ) != -1 )
+              continue;
+         i = sbChar.indexOf( c );
+         if( i != -1 )
+              c = eqChar.charAt( i );
+         novoTexto = novoTexto + c;
+    }
+     return (novoTexto);
+ }
+function geraMatriz(arg){
+  res=""; tmp=arg;
+  ct=1; ini=0;
+  while ((pos=tmp.indexOf(" "))!=-1){
+    nome[ct]=  tmp.substring(ini,pos) ;  tmp=tmp.substring(pos+1,arg.length);  ini=0; ct++;
+  }
+  nome[ct]=tmp;
+  for (i=1;i<=ct; i++){  res+= nome[i]; }
+  idx=ct;
+  return (res);
+}
+
+function inversao() {
+  ign=false;ix="";res="";
+
+	ix=nome[idx].toUpperCase();
+
+	if ((ix=="BOAS")&&(idx>2)&&((nome[idx-1].toUpperCase()=="VILAS")||(nome[idx-1].toUpperCase()=="VILLAS"))){
+    res= nome[--idx].toUpperCase() + " " + ix + ",";
+
+	} else if ((ex.indexOf(ix)!=-1)&&(idx>2)){
+	  res= nome[--idx].toUpperCase() + " " + ix + ",";
+
+	} else {
+    res=ix + ",";
+	}
+
+  for (var i=1;i<idx; i++){
+    for (var j=1; j<=8; j++){
+       if (nome[i].toUpperCase()==p[j]){  ign=true; break;  }
+    }
+    if (!ign){  res+=" " +nome[i].substring(0,1).toUpperCase() + ".";   }
+    ign=false;
+  }
+  return res;
+}
+
+
+
+
+
+
+$(document).ready(function(){
+
+	titularPessoaGrid = $.grid({
+		render:$("#titularPessoaHolder"), provider:titularPessoaProvider, maxHeight:500,
+    columns: [
+			{label: "", width: "10%", textAlign: "center", renderFunction: render.indexTitularPessoa},
+			{label: "Pessoas", width: "65%", renderFunction: render.titularPessoa, editFunction: edit.titularPessoa},
+			{label: "", width: "5%", textAlign: "center", renderFunction: render.titularPessoaControl}
+		],
+		selectFn: function(row, grid) {
+			return (row != titularPessoaGrid.getRows().last().get(0));
+		},
+		onGenerate: function() {
+			setTimeout(function(){
+				titularPessoaGrid.getRows().last().find("td:eq(1)").trigger("edit");
+			}, 100);
+		}
+	});
+
+
+
+	titularPessoaWin = $.win({
+		showCloseBtn:false, width:255,
+    content:"<div class='win-pad'><table><tr><td><b>Nome completo:</b></td><td><input maxlength='60' type='text' id='nometitularPessoa' /></td></tr><tr><td><b>Nome como citado:</b></td><td><input maxlength='60' type='text' id='nometitularPessoaComoCitado' /></td></tr></table></div>",
+		title:"Inclusão de Depositante/Titular",
+		buttons: [
+			{label: "confirmar", callback:function(){
+				var inputs = titularPessoaWin.getContent().find(":input"),
+            l = inputs.eq(0).val(),
+            t = inputs.eq(1).val(),
+            pattern = /\S+[\s]\S+/; // /\w+[\s]\w+/;
+
+        if ($.trim(l).length == 0 ) {
+           alert("Informe o nome do Titular");
+        } else if ($.trim(t).length == 0) {
+           alert("Informe o nome em citações");
+        }
+
+        else if (!pattern.test(l) || !pattern.test(t)) {
+           alert("É necessário preencher os dois campos utilizando o formato especificado");
+        }
+
+        else {
+
+          titularPessoaGlobalData = {l:l, t:t, c:0, tit:'n', add:true, editable:false,deletable:true,staValidado:'N'};
+
+          self.parent.titularPessoaDP.push(titularPessoaGlobalData);
+
+          titularPessoaSuggest.getInput().trigger("accept");
+
+        }
+
+			}},
+			{label: "cancelar", callback:function(){
+				titularPessoaWin.hide();
+			}}
+		],
+		onHide:function() {
+			titularPessoaGlobalData = null;
+			titularPessoaSuggest.getInput().focus();
+		},
+		onShow:function() {
+      var inputs = titularPessoaWin.getContent().find(":input"),
+          prompt = (titularPessoaSuggest.getInput().val() != titularPessoaPrompt) ? titularPessoaSuggest.getInput().val() : "",
+          index = (prompt.indexOf(".") != -1) ? 1 : 0;
+
+      inputs.val("").eq(index).val(prompt);
+
+			titularPessoaSuggest.getInput().blur();
+		}
+	});
+
+  $("#nometitularPessoa").blur(function(){
+  var nometitularPessoa = $("#nometitularPessoa").val();
+
+  var nomeCitado = gerar(nometitularPessoa);
+
+  $("#nometitularPessoaComoCitado").val(nomeCitado);
+  });
+
+  titularPessoaTodosWin = $.win({
+    showCloseBtn:true, width:500,
+    title:"Seleção de Depositante/Titular",
+    content: "<div class='win-pad'></div>",
+		onHide:function() {
+			titularPessoaGlobalData = null;
+			titularPessoaSuggest.getInput().focus();
+		}
+  });
+
+  treetitularPessoa = $.tree({
+    provider:self.parent.titularPessoaDP, attr:{label: "l"},
+    render:titularPessoaTodosWin.getContent().find("div.win-pad"),
+    onItemClick:function(node, data){
+
+      titularPessoaGlobalData = data;
+      titularPessoaSuggest.getInput().trigger("accept");
+
+      titularPessoaTodosWin.hide();
+
+    },
+		renderFunction: function(o, tree) {
+			var obj = o.provider,
+				str = o.opened ? "<ul>" : "<ul style='display:none'>",
+				label = tree.getAttr("label"),
+				icon = tree.getAttr("icon"),
+				children = tree.getAttr("children");
+
+			for (var x=0; x<obj.length; x++) {
+				var icon = obj[x][icon] ? obj[x][icon] : "item",
+            dataIndex = (o.dataIndex != null) ? (o.dataIndex + "," + x) : x;
+
+				str += "<li nodeIndex=" + (tree.nodeIndex++) + " dataIndex=" + dataIndex + ">";
+				str += "<a href='javascript:void(0)' class='icon " + icon + "'></a>";
+
+        if (obj[x]["c"] == "" || obj[x]["c"] < 0)
+          str += "<a href='javascript:void(0)' class='label' style='color:#00f'>" + obj[x][label] + " (" + obj[x]["t"] + ")</a>";
+
+        else
+          str += "<a href='javascript:void(0)' class='label'>" + obj[x][label] + " (" + obj[x]["t"] + ")</a>";
+
+				str += "</li>";
+			}
+			str += "</ul>";
+			return str;
+		}
+  });
+
+});
+</script>
+
+<style>
+div.suggest-wrapper div.suggest-list div.suggest-content a span {color:#00f}
+div.suggest-wrapper div.suggest-list div.suggest-content a.selected span {color:#fff}
+table.sup td.label {font-weight:bold; text-align:right}
+</style>
+
+
+<script>
+var titularInstProvider = 
+[{}];
+	  var titularInstNumMaxRegistros = 2000;
+</script>
+
+
+<script>
+/*
+*	TITULAR_PESSOA
+*/
+
+var p=new Array();
+var nome=new Array()
+var ret="";
+var idx=0;
+
+p[1] = "DA"; p[2] = "DE"; p[3] = "DAS"; p[4]=  "DI"; p[5] = "DO"; p[6] = "DOS"; p[7] = "DU"; p[8] = "DEL";
+ex="#JUNIOR#NETO#JR#JR.#FILHO#Fº#SOBRINHO#SOBRINHA#FILHA#NETA#";
+
+
+function trim(str) {
+  i=0;
+  while (((str.substring(i,i+1))== " ")&&(i < str.length)) i++;
+  aux=str.substring(i,str.length); i=aux.length;
+  while (((aux.substring(i-1,i)) == " ")&&(i>1)) i--;
+  aux=aux.substring(0,i);
+  return aux;
+}
+
+
+var vgerou = false;
+function gerar(nmeAutor){
+if(vgerou || nmeAutor.indexOf(",") > -1 ){
+          return;
+}
+ ret="";
+ if ((v=trim(nmeAutor))!="") {
+   ret=geraMatriz(filtraAcentos(filtraBrancos(v)));
+   return inversao();
+   vgerou = true;
+ }
+ return;
+}
+
+function filtraBrancos(arg){
+  res=""; i=0;
+  while(i<=arg.length){
+    if (arg.substring(i,i+1)==" ") {
+      res+=arg.substring(i,i+1);  i++;
+      while (((arg.substring(i,i+1))== " ")&&(i < arg.length)) i++;
+    }
+   res+=arg.substring(i,i+1);  i++;
+  }
+  return res;
+}
+
+function filtraAcentos( arg ) {
+  texto = arg + "";
+  novoTexto = "";
+  var c,  i;
+  sbChar = "ÁÃÀÄÂáãàäâÉÈËÊéèëêÍÌÎÏìîïíÓÒÔÕÖóòôõöÚÙÜÛúûüùÇçÑñ"
+  eqChar = "AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn";
+  exChar = "+_*" + unescape("%7E%7B%7D%A8%5E%28%29%26%25%24%5B%5D@%B4%60%7C%5C%3F%B0%BA%AA%A7%23%21%22%27");
+
+   for( var j = 0; j < texto.length; j++ ) {
+         c = texto.charAt( j );
+         if( exChar.indexOf( c ) != -1 )
+              continue;
+         i = sbChar.indexOf( c );
+         if( i != -1 )
+              c = eqChar.charAt( i );
+         novoTexto = novoTexto + c;
+    }
+     return (novoTexto);
+ }
+function geraMatriz(arg){
+  res=""; tmp=arg;
+  ct=1; ini=0;
+  while ((pos=tmp.indexOf(" "))!=-1){
+    nome[ct]=  tmp.substring(ini,pos) ;  tmp=tmp.substring(pos+1,arg.length);  ini=0; ct++;
+  }
+  nome[ct]=tmp;
+  for (i=1;i<=ct; i++){  res+= nome[i]; }
+  idx=ct;
+  return (res);
+}
+
+function inversao() {
+  ign=false;ix="";res="";
+
+	ix=nome[idx].toUpperCase();
+
+	if ((ix=="BOAS")&&(idx>2)&&((nome[idx-1].toUpperCase()=="VILAS")||(nome[idx-1].toUpperCase()=="VILLAS"))){
+    res= nome[--idx].toUpperCase() + " " + ix + ",";
+
+	} else if ((ex.indexOf(ix)!=-1)&&(idx>2)){
+	  res= nome[--idx].toUpperCase() + " " + ix + ",";
+
+	} else {
+    res=ix + ",";
+	}
+
+  for (var i=1;i<idx; i++){
+    for (var j=1; j<=8; j++){
+       if (nome[i].toUpperCase()==p[j]){  ign=true; break;  }
+    }
+    if (!ign){  res+=" " +nome[i].substring(0,1).toUpperCase() + ".";   }
+    ign=false;
+  }
+  return res;
+}
+
+$(document).ready(function(){
+
+	titularInstGrid = $.grid({
+		render:$("#titularInstHolder"), provider:titularInstProvider, maxHeight:500,
+    columns: [
+			{label: "", width: "10%", textAlign: "center", renderFunction: render.indextitularInst},
+			{label: "Instituições", width: "65%", renderFunction: render.titularInst, editFunction: edit.titularInst},
+			{label: "", width: "5%", textAlign: "center", renderFunction: render.titularInstControl}
+		],
+		selectFn: function(row, grid) {
+			return (row != titularInstGrid.getRows().last().get(0));
+		},
+		onGenerate: function() {
+			setTimeout(function(){
+				titularInstGrid.getRows().last().find("td:eq(1)").trigger("edit");
+			}, 100);
+		}
+	});
+
+	titularInstWin = $.win({
+		showCloseBtn:false, width:255,
+    content:"<div class='win-pad'><table><tr><td><b>Nome completo:</b></td><td><input maxlength='60' type='text' id='nometitularInst' /></td></tr><tr><td><b>Nome como citado:</b></td><td><input maxlength='60' type='text' id='nometitularInstComoCitado' /></td></tr></table></div>",
+		title:"Inclusão de autor",
+		buttons: [
+			{label: "confirmar", callback:function(){
+				var inputs = titularInstWin.getContent().find(":input"),
+            l = inputs.eq(0).val(),
+            t = inputs.eq(1).val(),
+            pattern = /\S+[\s]\S+/; // /\w+[\s]\w+/;
+
+        if ($.trim(l).length == 0 ) {
+           alert("Informe o nome do Titular");
+        } else if ($.trim(t).length == 0) {
+           alert("Informe o nome em citações");
+        }
+
+        else if (!pattern.test(l) || !pattern.test(t)) {
+           alert("É necessário preencher os dois campos utilizando o formato especificado");
+        }
+
+        else {
+
+          titularInstGlobalData = {l:l, t:t, c:0, tit:'n', add:true, editable:false,deletable:true};
+
+          self.parent.titularInstDP.push(titularInstGlobalData);
+
+          titularInstSuggest.getInput().trigger("accept");
+
+        }
+
+			}},
+			{label: "cancelar", callback:function(){
+				titularInstWin.hide();
+			}}
+		],
+		onHide:function() {
+			titularInstGlobalData = null;
+			titularInstSuggest.getInput().focus();
+		},
+		onShow:function() {
+      var inputs = titularInstWin.getContent().find(":input"),
+          prompt = (titularInstSuggest.getInput().val() != titularInstPrompt) ? titularInstSuggest.getInput().val() : "",
+          index = (prompt.indexOf(".") != -1) ? 1 : 0;
+
+      inputs.val("").eq(index).val(prompt);
+
+			titularInstSuggest.getInput().blur();
+		}
+	});
+
+  $("#nometitularInst").blur(function(){
+  var nometitularInst = $("#nometitularInst").val();
+
+  var nomeCitado = gerar(nometitularInst);
+
+  $("#nometitularInstComoCitado").val(nomeCitado);
+  });
+
+  titularInstTodosWin = $.win({
+    showCloseBtn:true, width:500,
+    visible:false,
+    title:"Seleção de Instituição",
+    url:"PKG_TITULAR_INST_GENERICA.sele_inst?f_cod=K1237839P9"
+  });
+
+
+  titularCadInstWin = $.win({
+    showCloseBtn:true, width:500,
+    visible:false,
+    title:"Seleção de Instituição",
+    url:"PKG_TITULAR_INST_GENERICA.sele_inst?f_ctr=O&f_cod=K1237839P9"
+  });
+});
+</script>
+
+
+        <script>
+        function configurarInstituicoes(){
+            var provider = titularInstGrid.getProvider();
+            var instsXML = "<root>";
+            for (index in provider) {
+                var valores = provider[index];
+            if (valores.l != undefined) {
+            instsXML = instsXML + "<item>";
+      /*    instsXML = instsXML + "<nome>";
+            instsXML = instsXML + valores.l;
+            instsXML = instsXML + "</nome>\n";*/
+            instsXML = instsXML + "<cod>";
+            instsXML = instsXML + valores.c;
+            instsXML = instsXML + "</cod>";
+            instsXML = instsXML + "<tipo_inst>";
+            instsXML = instsXML + valores.tipoInst;
+            instsXML = instsXML + "</tipo_inst>";
+            instsXML = instsXML + "</item>";
+            }
+        }
+            var instsXML = instsXML + "</root>";
+            $("#f_instituicoes").val(instsXML);
+           // alert($("#f_instituicoes").val());
+            return false;
+        }
+
+
+        $(document).ready(function(){
+        $("#titularPessoaHolder").hide();
+        });
+
+</script>
+<div id="abas">
+
+<div class="Instituição" style="font:11px arial!important">
+<table width="560">
+  <tbody><tr>
+    <td>
+Instituição de execução <br>
+
+<input type="text" disabled="" onchange="alertainst(this);" class="input-lupa" name="f_inst" value="" size="85" maxlength="75">
+
+<a title="Instituição de execução" href="javascript:sele_inst();" class="lupa"></a><br style="clear:both">
+
+        <input type="hidden" id="f_instituicoes" name="f_instituicoes" value="">
+<input type="hidden" name="f_cod_inst" value="">
+<input type="hidden" name="f_cod_inst2" value="">
+<input type="hidden" name="f_instold" value="">
+<input type="hidden" name="f_inst_old" value="">
+<input type="hidden" name="f_codorgao" value="">
+<input type="hidden" name="f_codorgao2" value="">
+<input type="hidden" name="f_cod_tipo" value="P">
+<input type="hidden" name="f_orgao_old" value="">
+
+          </td>
+        </tr>
+        <tr>
+          <td>
+        
+Órgão/Unidade<br>
+<input value="" type="text" size="85" disabled="" class="input-lupa" name="f_orgao" cols="85" rows="2" wrap="soft" onchange="alertainst(this,0);">
+              
+<a href="" title="Órgão/Unidade" class="lupa" onclick="orgao();return false;"></a>
+          <input type="hidden" name="f_vinc">
+          <input type="hidden" name="f_stavinc">
+          <input type="hidden" name="f_enqua">
+          <input type="hidden" name="f_carga">
+          <input type="hidden" name="f_regime">
+        
+
+              </td>
+            </tr>
+          </tbody></table>
+
+        </div>
+<br style="clear:both">
+<em titulo="Equipe">
+Equipe
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+
+<style>
+div.suggest-wrapper div.suggest-list div.suggest-content a span {color:#00f}
+div.suggest-wrapper div.suggest-list div.suggest-content a.selected span {color:#fff}
+table.sup td.label {font-weight:bold; text-align:right}
+</style>
+
+
+<script>
+var autorProvider = 
+[{}];
+	  var autorNumMaxRegistros = 2000;
+</script>
+
+
+<table id="tabelaAutor" style="width:540px">
+  <tbody>
+    <tr>
+      <td id="autorHolder"><div class="grid-wrapper"><div class="grid-header"><table cellspacing="0" cellpading="0" style="width: 100%;"><thead><tr><th style="width: 71px;"></th><th style="width: 390px;">Pesquisadores</th><th style="width: 89px;">Coordenador</th><th class="last" style="width: 36px;"></th></tr></thead></table></div><div class="grid-content" style="height: auto;"><table cellspacing="0" cellpading="0" style="width: 100%;"><tbody><tr class="even"><td style="width: 12%; text-align: center;"></td><td style="width: 65%;"><div class="cell-wrapper"><div class="suggest-wrapper" style="width: 251px;"><input type="text" maxlength="60" style="font-style: italic; color: rgb(174, 174, 174);"><div class="suggest-list"><h1></h1><h2></h2><h3></h3><div class="suggest-content"></div><h3></h3><h2></h2><h1></h1></div><a href="javascript:void(0)" style="margin-left: 5px;">Listar todos</a><b style="margin-left: 5px;">|</b><a href="javascript:void(0)" style="margin-left: 5px;">Incluir novo</a></div></div></td><td style="width: 15%;"></td><td style="width: 6%; text-align: center;"></td></tr></tbody></table></div></div></td>
+    </tr>
+  </tbody>
+</table><table id="tabelatitularPessoa" style="width:598px !important">
+  <tbody>
+    <tr>
+      <td id="titularPessoaHolder" style="display: none;"><div class="grid-wrapper"><div class="grid-header"><table cellspacing="0" cellpading="0" style="width: 100%;"><thead><tr><th style="width: 10px;"></th><th style="width: 65px;">Pessoas</th><th class="last" style="width: 5px;"></th></tr></thead></table></div><div class="grid-content" style="height: auto;"><table cellspacing="0" cellpading="0" style="width: 100%;"><tbody><tr class="even"><td style="width: 10%; text-align: center;"></td><td style="width: 65%;"><div class="cell-wrapper"><div class="suggest-wrapper"><input type="text" maxlength="60" style="font-style: italic; color: rgb(174, 174, 174);"><div class="suggest-list"><h1></h1><h2></h2><h3></h3><div class="suggest-content"></div><h3></h3><h2></h2><h1></h1></div><a href="javascript:void(0)" style="margin-left: 5px;">Listar todas</a><b style="margin-left: 5px;">|</b><a href="javascript:void(0)" style="margin-left: 5px;">Incluir nova</a></div></div></td><td style="width: 5%; text-align: center;"></td></tr></tbody></table></div></div></td>
+    </tr>
+    <tr>
+      <td id="titularInstHolder"><div class="grid-wrapper"><div class="grid-header"><table cellspacing="0" cellpading="0" style="width: 100%;"><thead><tr><th style="width: 73px;"></th><th style="width: 478px;">Instituições envolvidas no projeto</th><th class="last" style="width: 37px;"></th></tr></thead></table></div><div class="grid-content" style="height: auto;"><table cellspacing="0" cellpading="0" style="width: 100%;"><tbody><tr class="even"><td style="width: 10%; text-align: center;"></td><td style="width: 65%;"><div class="cell-wrapper"><div class="suggest-wrapper" style="width: 339px;"><input type="text" maxlength="60" style="font-style: italic; color: rgb(174, 174, 174);"><div class="suggest-list"><h1></h1><h2></h2><h3></h3><div class="suggest-content"></div><h3></h3><h2></h2><h1></h1></div><a href="javascript:void(0)" style="margin-left: 5px;">Selecionar</a><b style="margin-left: 5px;">|</b><a href="javascript:void(0)" style="margin-left: 5px;">Incluir nova</a></div></div></td><td style="width: 5%; text-align: center;"></td></tr></tbody></table></div></div></td>
+    </tr>
+  </tbody>
+</table><br>
+
+<script>
+/*
+*	AUTOR
+*/
+
+var p=new Array();
+var nome=new Array()
+var ret="";
+var idx=0;
+
+p[1] = "DA"; p[2] = "DE"; p[3] = "DAS"; p[4]=  "DI"; p[5] = "DO"; p[6] = "DOS"; p[7] = "DU"; p[8] = "DEL";
+ex="#JUNIOR#NETO#JR#JR.#FILHO#Fº#SOBRINHO#SOBRINHA#FILHA#NETA#";
+
+
+function trim(str) {
+  i=0;
+  while (((str.substring(i,i+1))== " ")&&(i < str.length)) i++;
+  aux=str.substring(i,str.length); i=aux.length;
+  while (((aux.substring(i-1,i)) == " ")&&(i>1)) i--;
+  aux=aux.substring(0,i);
+  return aux;
+}
+
+
+var vgerou = false;
+function gerar(nmeAutor){
+if(vgerou || nmeAutor.indexOf(",") > -1 ){
+          return;
+}
+ ret="";
+ if ((v=trim(nmeAutor))!="") {
+   ret=geraMatriz(filtraAcentos(filtraBrancos(v)));
+   return inversao();
+   vgerou = true;
+// } else {
+//   alert("Informe o Nome do autor");
+ }
+ return;
+}
+
+function filtraBrancos(arg){
+  res=""; i=0;
+  while(i<=arg.length){
+    if (arg.substring(i,i+1)==" ") {
+      res+=arg.substring(i,i+1);  i++;
+      while (((arg.substring(i,i+1))== " ")&&(i < arg.length)) i++;
+    }
+   res+=arg.substring(i,i+1);  i++;
+  }
+  return res;
+}
+
+function filtraAcentos( arg ) {
+  texto = arg + "";
+  novoTexto = "";
+  var c,  i;
+  sbChar = "ÁÃÀÄÂáãàäâÉÈËÊéèëêÍÌÎÏìîïíÓÒÔÕÖóòôõöÚÙÜÛúûüùÇçÑñ"
+  eqChar = "AAAAAaaaaaEEEEeeeeIIIIiiiiOOOOOoooooUUUUuuuuCcNn";
+  exChar = "+_*" + unescape("%7E%7B%7D%A8%5E%28%29%26%25%24%5B%5D@%B4%60%7C%5C%3F%B0%BA%AA%A7%23%21%22%27");
+
+   for( var j = 0; j < texto.length; j++ ) {
+         c = texto.charAt( j );
+         if( exChar.indexOf( c ) != -1 )
+              continue;
+         i = sbChar.indexOf( c );
+         if( i != -1 )
+              c = eqChar.charAt( i );
+         novoTexto = novoTexto + c;
+    }
+     return (novoTexto);
+ }
+function geraMatriz(arg){
+  res=""; tmp=arg;
+  ct=1; ini=0;
+  while ((pos=tmp.indexOf(" "))!=-1){
+    nome[ct]=  tmp.substring(ini,pos) ;  tmp=tmp.substring(pos+1,arg.length);  ini=0; ct++;
+  }
+  nome[ct]=tmp;
+  for (i=1;i<=ct; i++){  res+= nome[i]; }
+  idx=ct;
+  return (res);
+}
+
+function inversao() {
+  ign=false;ix="";res="";
+
+	ix=nome[idx].toUpperCase();
+
+	if ((ix=="BOAS")&&(idx>2)&&((nome[idx-1].toUpperCase()=="VILAS")||(nome[idx-1].toUpperCase()=="VILLAS"))){
+    res= nome[--idx].toUpperCase() + " " + ix + ",";
+
+	} else if ((ex.indexOf(ix)!=-1)&&(idx>2)){
+	  res= nome[--idx].toUpperCase() + " " + ix + ",";
+
+	} else {
+    res=ix + ",";
+	}
+
+  for (var i=1;i<idx; i++){
+    for (var j=1; j<=8; j++){
+       if (nome[i].toUpperCase()==p[j]){  ign=true; break;  }
+    }
+    if (!ign){  res+=" " +nome[i].substring(0,1).toUpperCase() + ".";   }
+    ign=false;
+  }
+  return res;
+}
+
+
+
+
+
+
+$(document).ready(function(){
+
+	autorGrid = $.grid({
+		render:$("#autorHolder"), provider:autorProvider, maxHeight:500,
+    columns: [
+			{label: "", width: "12%", textAlign: "center", renderFunction: render.indexAutor},
+			{label: "Pesquisadores", width: "65%", renderFunction: render.autor, editFunction: edit.autor},{label: "Coordenador", width: "15%", renderFunction: render.titular, editFunction: edit.titular},
+			{label: "", width: "6%", textAlign: "center", renderFunction: render.autorControl}
+		],
+		selectFn: function(row, grid) {
+			return (row != autorGrid.getRows().last().get(0));
+		},
+		onGenerate: function() {
+			setTimeout(function(){
+				autorGrid.getRows().last().find("td:eq(1)").trigger("edit");
+			}, 100);
+		}
+	});
+
+
+
+	autorWin = $.win({
+		showCloseBtn:false, width:255,
+    content:"<div class='win-pad'><table><tr><td><b>Nome completo:</b></td><td><input maxlength='60' type='text' id='nomeAutor' /></td></tr><tr><td><b>Nome como citado:</b></td><td><input maxlength='60' type='text' id='nomeAutorComoCitado' /></td></tr></table></div>",
+		title:"Inclusão de participante",
+		buttons: [
+			{label: "confirmar", callback:function(){
+				var inputs = autorWin.getContent().find(":input"),
+            l = inputs.eq(0).val(),
+            t = inputs.eq(1).val(),
+            pattern = /\S+[\s]\S+/; // /\w+[\s]\w+/;
+
+        if ($.trim(l).length == 0 ) {
+           alert("Campo Nome completo obrigatório não informado");
+        } else if ($.trim(t).length == 0) {
+           alert("Campo Nome como citado obrigatório não informado");
+        }
+
+        else if (!pattern.test(l) || !pattern.test(t)) {
+           alert("É necessário preencher os dois campos utilizando o formato especificado");
+        }
+
+        else {
+
+          autorGlobalData = {l:l, t:t, c:" ", tit:'n', add:true, editable:false,deletable:true};
+          self.parent.autorDP.push(autorGlobalData);
+          autorSuggest.getInput().trigger("accept");
+
+        }
+
+			}},
+			{label: "cancelar", callback:function(){
+				autorWin.hide();
+			}}
+		],
+		onHide:function() {
+			autorGlobalData = null;
+			autorSuggest.getInput().focus();
+		},
+		onShow:function() {
+      var inputs = autorWin.getContent().find(":input"),
+          prompt = (autorSuggest.getInput().val() != autorPrompt) ? autorSuggest.getInput().val() : "",
+          index = (prompt.indexOf(".") != -1) ? 1 : 0;
+
+      inputs.val("").eq(index).val(prompt);
+
+			autorSuggest.getInput().blur();
+		}
+	});
+
+  $("#nomeAutor").blur(function(){
+  var nomeAutor = $("#nomeAutor").val();
+
+  var nomeCitado = gerar(nomeAutor);
+
+  $("#nomeAutorComoCitado").val(nomeCitado);
+  });
+
+  autorTodosWin = $.win({
+    showCloseBtn:true, width:630,
+    title:"Pesquisadores ( Os seus nomes em citação bibliográfica estão em destaque na cor azul )",
+    content: "<div class='win-pad'></div>",
+		onHide:function() {
+			autorGlobalData = null;
+			autorSuggest.getInput().focus();
+		}
+  });
+
+  treeAutor = $.tree({
+    provider:self.parent.autorDP, attr:{label: "l"},
+    render:autorTodosWin.getContent().find("div.win-pad"),
+    onItemClick:function(node, data){
+
+      autorGlobalData = data;
+      autorSuggest.getInput().trigger("accept");
+
+      autorTodosWin.hide();
+
+    },
+		renderFunction: function(o, tree) {
+			var obj = o.provider,
+				str = o.opened ? "<ul>" : "<ul style='display:none'>",
+				label = tree.getAttr("label"),
+				icon = tree.getAttr("icon"),
+				children = tree.getAttr("children");
+
+			for (var x=0; x<obj.length; x++) {
+				var icon = obj[x][icon] ? obj[x][icon] : "item",
+            dataIndex = (o.dataIndex != null) ? (o.dataIndex + "," + x) : x;
+
+				str += "<li nodeIndex=" + (tree.nodeIndex++) + " dataIndex=" + dataIndex + ">";
+				str += "<a href='javascript:void(0)' class='icon " + icon + "'></a>";
+
+        if (obj[x]["c"] == "" || obj[x]["c"] < 0)
+          str += "<a href='javascript:void(0)' class='label' style='color:#00f'>" + obj[x][label] + " (" + obj[x]["t"] + ")</a>";
+
+        else
+          str += "<a href='javascript:void(0)' class='label'>" + obj[x][label] + " (" + obj[x]["t"] + ")</a>";
+
+				str += "</li>";
+			}
+			str += "</ul>";
+			return str;
+		}
+  });
+
+});
+</script>
+<br style="clear:both">
+<table>
+    <tbody><tr>
+      <td colspan="5"><br>Quantidade de alunos envolvidos no projeto<br></td>
+    </tr>
+    <tr>
+<input type="hidden" name="f_nro_tec_nivel_medio" value="">
+<input type="hidden" name="F_NRO_PRIMEIRO_GRAU" value="">
+<input type="hidden" name="F_NRO_SEGUNDO_GRAU" value="">
+<td width="10%" align="center">
+          <span style="display: block;">Graduação</span>
+<input type="text" name="F_NRO_GRADUACAO" size="3" maxlength="2">
+</td>
+<td width="14%" align="center">
+          <span style="display: block;">Especialização</span>
+<input type="text" name="F_NRO_ESPECIALIZACAO" size="3" maxlength="2">
+</td>
+<td width="19%" align="center">
+          <span style="display: block;">Mestrado acadêmico</span>
+<input type="text" name="F_NRO_MESTRADO_ACAD" size="3" maxlength="2">
+</td>
+<td width="24%" align="center">
+          <span style="display: block;">Mestrado profissionalizante</span>
+<input type="text" name="F_NRO_MESTRADO_PROF" size="3" maxlength="2">
+</td>
+<td width="15%" align="center">
+          <span style="display: block;">Doutorado</span>
+<input type="text" name="F_NRO_DOUTORADO" size="3" maxlength="2">
+</td></tr></tbody></table>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+<br>
+<em titulo="Instituição de ...">
+Instituição de financiamento
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+<br>
+<table class="grid" id="grid2" style="visibility: visible;">
+  <thead>
+    <tr>
+      <th tabindex="0" style="width: 20%;">Instituição</th>
+      <th tabindex="0" style="width: 20%;">Código do projeto</th>
+      <th tabindex="0" style="width: 25%;">Valor financiado</th>
+      <th tabindex="0" style="width: 25%;">Natureza</th>
+      <th style="width: 10%;"><img class="gridSetaCima" alt="Move a linha para cima" title="Move a linha para cima" src="/images/estatico/imagens/up.gif" style="visibility: hidden;">&nbsp;</th>
+    <th class="scrollBar">&nbsp;</th></tr>
+  </thead>
+  <tbody>
+  
+<tr><td colspan="6"><div class="holder" style="height: 0px;"><table><tbody></tbody></table></div></td></tr></tbody><tfoot><tr><td class="rodapeGrid" colspan="5"><img class="botaoAdicionar" src="/images/estatico/imagens/add2.gif" style="display: block;"><img alt="Move a linha para baixo" title="Move a linha para baixo" class="gridSetaBaixo" src="/images/estatico/imagens/down.gif" style="visibility: hidden;"></td></tr></tfoot></table><br>
+    O valor financiado não será exibido na internet.
+<script>
+    function apagaLinhaTabela(img) {
+    _tr = img.parentNode.parentNode;
+    _tbody = _tr.parentNode;
+    _tbody.removeChild(_tr);
+    grid_2.executarTarefas()
+    }
+
+    function editarLinhaTabela(img) {
+      _tr = img.parentNode.parentNode;
+      _index = _tr.rowIndex;
+
+      var valores = "";
+
+      for (x=0; x<_tr.cells.length-1; x++) {
+        if (_tr.cells[x].getElementsByTagName("span").length > 0) {
+          valores += _tr.cells[x].getElementsByTagName("span")[0].innerHTML +  "|";
+        }
+//        alert(valores);
+
+
+      }
+
+       url = "PKG_PROJETO.EDITAR_FINANCIAMENTO?P_COD=K1237839P9&P_VALORES=" + valores + "&P_INDICE=" + _index
+       self.parent.modalCV3.setarUrl(url,true,70,350,450);
+
+      //alert(valores);
+     }
+
+</script>
+
+
+    
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+<br>
+<em titulo="Produção C &amp; T">
+Produção C &amp; T
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+<br>
+<table class="grid" id="grid3" style="visibility: visible;">
+  <thead>
+    <tr>
+      <th tabindex="0" style="width: 50%;">Título da produção</th>
+      <th tabindex="0" style="width: 13%;">Ano</th>
+      <th tabindex="0" style="width: 37%;"><img class="gridSetaCima" alt="Move a linha para cima" title="Move a linha para cima" src="/images/estatico/imagens/up.gif" style="visibility: hidden;">Tipo</th>
+    <th class="scrollBar">&nbsp;</th></tr>
+  </thead>
+  <tbody>
+
+<input type="hidden" name="f_producoes_d" value="">
+<tr><td colspan="4"><div class="holder" style="height: 0px;"><table><tbody></tbody></table></div></td></tr></tbody><tfoot><tr><td class="rodapeGrid" colspan="3"><img class="botaoAdicionar" src="/images/estatico/imagens/add2.gif" style="display: block;"><img alt="Move a linha para baixo" title="Move a linha para baixo" class="gridSetaBaixo" src="/images/estatico/imagens/down.gif" style="visibility: hidden;"></td></tr></tfoot></table>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+<br>
+<em titulo="Orientações">
+Orientações
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+<br>
+<table class="grid" id="grid4" style="visibility: visible;">
+  <thead>
+    <tr>
+      <th tabindex="0" style="width: 50%;">Título da orientação</th>
+      <th tabindex="0" style="width: 13%;">Ano</th>
+      <th tabindex="0" style="width: 37%;"><img class="gridSetaCima" alt="Move a linha para cima" title="Move a linha para cima" src="/images/estatico/imagens/up.gif" style="visibility: hidden;">Tipo</th>
+    <th class="scrollBar">&nbsp;</th></tr>
+  </thead>
+  <tbody>
+
+<input type="hidden" name="f_orientacoes_d" value="">
+<tr><td colspan="4"><div class="holder" style="height: 0px;"><table><tbody></tbody></table></div></td></tr></tbody><tfoot><tr><td class="rodapeGrid" colspan="3"><img class="botaoAdicionar" src="/images/estatico/imagens/add2.gif" style="display: block;"><img alt="Move a linha para baixo" title="Move a linha para baixo" class="gridSetaBaixo" src="/images/estatico/imagens/down.gif" style="visibility: hidden;"></td></tr></tfoot></table>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+</div>
+<br><br> 
+<input type="hidden" name="f_ctr" value="I">
+<input type="hidden" name="f_cod" value="K1237839P9">
+<input type="hidden" name="f_codinst" value="">
+<input type="hidden" name="f_seq_ativ" value="">
+<input type="hidden" name="f_seq_funcao" value="">
+<input type="hidden" name="f_seq_proj" value="">
+<input type="hidden" name="f_producoes_l" value="">
+<input type="hidden" name="f_orientacoes_l" value="">
+<input type="hidden" name="f_autores_l" value="">
+<input type="hidden" name="f_inst_l" value="">
+<em titulo="Traduções">
+Traduções
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+
+      <script>
+        function copiaTexto() {
+          dc.f_titulo_en.value=dc.f_titulo.value;
+          dc.f_ref_en.value=dc.f_ref.value;
+        }
+      </script>
+      
+<a href="javascript:void(0);" onclick="copiaTexto()">Clique aqui para repetir os textos já informados</a><br>
+<table border="0" width="560"><tbody><tr><td>Project Name<br>
+<input type="text" name="f_titulo_en" size="80" maxlength="255">
+
+  </td></tr><tr><td>
+<table width="540" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td class="tituloTabela01">
+          <table width="540" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td class="celulaTabela01">
+              Description<br>
+              <textarea name="f_ref_en" cols="85" rows="10" wrap="soft" maxlength="3900"></textarea><br>
+
+                </td>
+                          </tr>
+                        </tbody></table>
+                      <br>
+                      </td>
+
+                    </tr>
+                  </tbody></table>
+  </td></tr></tbody></table>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+<em titulo="Visibilidade">
+Visibilidade
+</em>
+<span>
+
+<table width="100%" border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+        <td>
+          <table width="100%" border="0" cellpadding="1" cellspacing="1">
+            <tbody><tr>
+              <td>
+
+      <link rel="stylesheet" type="text/css" href="/images/estatico/css/dd.min.css">
+      <script src="/images/estatico/js/dd.min.js"></script>
+      <span>Controle quem pode visualizar estas informaçoes ao definir sua visibilidade. A visibilidade padrão é definida como Público.</span>
+      <br><br>
+<img src="/images/estatico/imagens/Icone-Publico.png" width="16px"><span>&nbsp;&nbsp;Público: As informações serão exibidas na consulta pública.</span><br>
+<img src="/images/estatico/imagens/Icone-Privado.png" width="16px"><span>&nbsp;&nbsp;Privado: As informações não serão exibidas na consulta pública.</span><br>
+
+      <br>
+      <select name="" is="ms-dropdown" width="150px" tabindex="-1" style="display: none;">
+    
+<option data-image="/images/estatico/imagens/Icone-Publico.png" value="1">Público</option>
+<option data-image="/images/estatico/imagens/Icone-Privado.png" value="2">Privado</option>
+
+      </select><div tabindex="0" class="ms-dd ms-pr" style=""><input tabindex="-1" name="f_tipo_privacidade" type="text" class="ms-value-input"><div class="more" style="display: none;"></div><div class="ms-dd-header" style="min-height: 0px;"><a class="ms-list-option option-selected" style="display: block;"><span class="ms-dd-arrow ms-dd-pointer-down"></span><span class="ms-header-middle-content"><span class="ms-middle"><img class="ms-dd-option-image" src="/images/estatico/imagens/Icone-Publico.png"><span class="ms-dd-option-content"><span class="ms-dd-label">Público</span><span class="ms-dd-desc"></span></span></span></span></a><div class="ms-filter-box" style="display: none;"><input type="text"></div></div><ul class="ms-options" style="display: none;"><li class="ms-list-option enabled option-selected" data-ms-index="0"><span class="ms-middle"><img class="ms-dd-option-image" src="/images/estatico/imagens/Icone-Publico.png"><span class="ms-dd-option-content"><span class="ms-dd-label">Público</span><span class="ms-dd-desc"></span></span></span></li><li class="ms-list-option enabled" data-ms-index="1"><span class="ms-middle"><img class="ms-dd-option-image" src="/images/estatico/imagens/Icone-Privado.png"><span class="ms-dd-option-content"><span class="ms-dd-label">Privado</span><span class="ms-dd-desc"></span></span></span></li></ul><div style="clear: both;"></div></div>
+      <script>
+        $("[name=f_tipo_privacidade]").val("1");
+        var valorPriv = "1";
+      </script>
+    
+<br><br><br><br><br>
+
+                             </td>
+                           </tr>
+                       </tbody></table>
+                      </td>
+                     </tr>
+                 </tbody></table>
+               </span>
+
+</div></div></fieldset>
+<div class="controle">
+<span class="botao salvar">
+                  <a href="javascript:void(0)" onclick="check();return false;">
+                  <span></span>Salvar</a>
+               </span>
+</div>
+
+<script>
+        $(document).ready(function(){
+        $("#tabelatitularPessoa").insertAfter("#tabelaAutor");
+        $("th:contains('Instituições')").html("Instituições envolvidas no projeto");
+        $("#possuiInovacao").html("O projeto possui potencial de inovação de produtos, processos ou serviços?");
+        $("#qualPotencial").html("Qual o potencial de inovação do projeto?");
+        dc.f_txt_nme_empresa.setAttribute('readonly', true);
+        dc.f_txt_nme_empresa.style.backgroundColor = "#F0F0F0"
+
+        });
+         $(document).ready(function(){
+         if("P" == "P")
+        self.parent.veriHelp("PROJETOS_PESQUISA");
+        else if("P" == "D")
+        self.parent.veriHelp("PROJETOS_DESENVOLVIMENTO_TECNOLOGICO");
+        else if("P" == "E")
+        self.parent.veriHelp("PROJETO_DE_EXTENSAO");
+        else if("P" == "O")
+        self.parent.veriHelp("OUTROS_TIPOS_DE_PROJETO");
+        else if("P" == "N")
+        self.parent.veriHelp("PROJETO_DE_ENSINO");        
+         });
+        </script>
+
+</div></form><div class="win-overlay" style="opacity: 0.75; display: none; height: 420px;"></div><div class="win-wrapper" style="display: none; left: 238.5px; top: 146.5px;"><table class="win-holder"><tbody><tr class="win-top"><td class="win-top-left"></td><td class="win-top-center"></td><td class="win-top-right"></td></tr><tr class="win-mid"><td class="win-mid-left"></td><td class="win-mid-center"><div class="win-header"><div class="win-tools"></div><div class="win-title">Inclusão de Depositante/Titular</div></div><div class="win-content" style="width: 255px; max-height: 340px;"><div class="win-pad"><table><tbody><tr><td><b>Nome completo:</b></td><td><input maxlength="60" type="text" id="nometitularPessoa"></td></tr><tr><td><b>Nome como citado:</b></td><td><input maxlength="60" type="text" id="nometitularPessoaComoCitado"></td></tr></tbody></table></div></div><div class="win-bottom-bar" style="text-align: center;"><span class="botao salvar"><a href="javascript:void(0)"><span></span>confirmar</a></span><span class="botao excluir"><a href="javascript:void(0)"><span></span>cancelar</a></span></div></td><td class="win-mid-right"></td></tr><tr class="win-bottom"><td class="win-bottom-left"></td><td class="win-bottom-center"></td><td class="win-bottom-right"></td></tr></tbody></table></div><div class="win-overlay" style="opacity: 0.75; display: none; height: 420px;"></div><div class="win-wrapper" style="display: none; left: 116px; top: 180.5px;"><table class="win-holder"><tbody><tr class="win-top"><td class="win-top-left"></td><td class="win-top-center"></td><td class="win-top-right"></td></tr><tr class="win-mid"><td class="win-mid-left"></td><td class="win-mid-center"><div class="win-header"><div class="win-tools"><a href="javascript:void(0)" class="tool close"></a></div><div class="win-title">Seleção de Depositante/Titular</div></div><div class="win-content" style="width: 500px; max-height: 340px;"><div class="win-pad"><div class="tree-wrapper" style="max-height: 200px;"><ul><li nodeindex="0" dataindex="0"><a href="javascript:void(0)" class="icon item"></a><a href="javascript:void(0)" class="label" style="color:#00f">Angelo Guimarães Rosa Alvares (ALVARES, A. G. R.)</a></li></ul></div></div></div><div class="win-bottom-bar" style="text-align: center; display: none;"></div></td><td class="win-mid-right"></td></tr><tr class="win-bottom"><td class="win-bottom-left"></td><td class="win-bottom-center"></td><td class="win-bottom-right"></td></tr></tbody></table></div><div class="win-overlay" style="opacity: 0.75; display: none; height: 420px;"></div><div class="win-wrapper" style="display: none; left: 238.5px; top: 146.5px;"><table class="win-holder"><tbody><tr class="win-top"><td class="win-top-left"></td><td class="win-top-center"></td><td class="win-top-right"></td></tr><tr class="win-mid"><td class="win-mid-left"></td><td class="win-mid-center"><div class="win-header"><div class="win-tools"></div><div class="win-title">Inclusão de autor</div></div><div class="win-content" style="width: 255px; max-height: 340px;"><div class="win-pad"><table><tbody><tr><td><b>Nome completo:</b></td><td><input maxlength="60" type="text" id="nometitularInst"></td></tr><tr><td><b>Nome como citado:</b></td><td><input maxlength="60" type="text" id="nometitularInstComoCitado"></td></tr></tbody></table></div></div><div class="win-bottom-bar" style="text-align: center;"><span class="botao salvar"><a href="javascript:void(0)"><span></span>confirmar</a></span><span class="botao excluir"><a href="javascript:void(0)"><span></span>cancelar</a></span></div></td><td class="win-mid-right"></td></tr><tr class="win-bottom"><td class="win-bottom-left"></td><td class="win-bottom-center"></td><td class="win-bottom-right"></td></tr></tbody></table></div><div class="win-overlay" style="opacity: 0.75; display: none; height: 420px;"></div><div class="win-wrapper" style="display: none; left: 117.5px; top: 33.5px;"><table class="win-holder"><tbody><tr class="win-top"><td class="win-top-left"></td><td class="win-top-center"></td><td class="win-top-right"></td></tr><tr class="win-mid"><td class="win-mid-left"></td><td class="win-mid-center"><div class="win-header"><div class="win-tools"><a href="javascript:void(0)" class="tool close"></a></div><div class="win-title">Seleção de Instituição</div></div><div class="win-content" style="width: 500px; max-height: 340px;">
+
+
+
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8">
+<meta http-equiv="Expires" content="Tue, 01 Dec 1990 06:30:00 GMT">
+<meta http-equiv="Cache-Control" content="no-cache,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="ROBOTS" content="NOARCHIVE">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+<title>Currículo Lattes</title>
+
+    <style>
+
+      html{background:#fff; }
+      body {background:#fff;}
+      table {font:normal 11px arial}
+      form {height:30%; width:100%}
+      textarea { border:1px solid Gray;font-family:Arial,Helvetica,sans-serif;font-size:11px; }
+      * html input, * html textarea, * html select {font:normal 11px arial}
+
+    </style>
+    <style>
+      .win-mid .win-mid-center .win-content {
+         display: block !important;
+         max-height: 285px !important;
+         overflow: hidden !important;
+         padding-bottom: 40px !important;
+         width: 497px !important;
+      }
+      .navegacao2 {
+         height: 293px !important;
+         overflow-x: hidden !important;
+         width: 100% !important;
+      }
+      .tela_menor .conteudo {
+          height: auto !important;
+          max-width: 480px !important;
+          min-width: 430px !important;
+          padding: 5px;
+      }
+      .navegacao .controle_peq {
+         background-color: #E1EAF3 !important;
+         bottom: 0;
+         clear: both !important;
+         height: 38px !important;
+         left: 9px;
+         margin-left: 0;
+         padding-bottom: 0 !important;
+         padding-top: 5px !important;
+         position: absolute;
+         text-align: right !important;
+         width: 499px !important;
+      }
+     </style>
+
+ 
+ 
+ <div>
+ <form name="instituicaoForm">
+
+
+
+
+    <input type="hidden" name="f_ctr" value="P">
+    <input type="hidden" name="f_cod" value="K1237839P9">
+
+<div class="navegacao2">
+  <fieldset class="tela_menor">
+
+      <div class="conteudo">
+      <em>
+      <div id="helpCont0" style="display:none;">
+      <a href="javascript:void(0)" target="blank" id="helpHref">
+      <img src="/images/estatico/imagens/help-icon_24.gif" border="0" style="float:right"></a></div>
+      Instituições
+      </em>
+      <span>
+
+      <table border="0" cellpadding="0" cellspacing="0">
+      <tbody><tr>
+
+      <td class="tituloTabela01">
+        <table border="0" cellpadding="1" cellspacing="1">
+        <tbody><tr>
+        <td class="celulaTabela01">
+<label class="label-texto" for="f_nome">Preencha o campo abaixo com Nome, Sigla ou parte do Nome da Instituição/Sociedade Científica e clique na imagem da lupa para pesquisar</label>
+
+<input id="f_nome" type="text" class="input-lupa" name="f_nome" value="" size="70">
+<a title="Pesquisar" id="buscar" class="lupa" href="#"></a>
+
+  </td>
+  </tr>
+
+  </tbody></table>
+  </td>
+  </tr>
+  </tbody></table>
+  </span>
+
+
+  
+</div></fieldset></div></form></div></div><div class="win-bottom-bar" style="text-align: center; display: none;"></div></td><td class="win-mid-right"></td></tr><tr class="win-bottom"><td class="win-bottom-left"></td><td class="win-bottom-center"></td><td class="win-bottom-right"></td></tr></tbody></table></div><div class="win-overlay" style="opacity: 0.75; display: none; height: 420px;"></div><div class="win-wrapper" style="display: none; left: 117.5px; top: 33.5px;"><table class="win-holder"><tbody><tr class="win-top"><td class="win-top-left"></td><td class="win-top-center"></td><td class="win-top-right"></td></tr><tr class="win-mid"><td class="win-mid-left"></td><td class="win-mid-center"><div class="win-header"><div class="win-tools"><a href="javascript:void(0)" class="tool close"></a></div><div class="win-title">Seleção de Instituição</div></div><div class="win-content" style="width: 500px; max-height: 340px;">
+
+
+
+<meta http-equiv="X-UA-Compatible" content="IE=EmulateIE8">
+<meta http-equiv="Expires" content="Tue, 01 Dec 1990 06:30:00 GMT">
+<meta http-equiv="Cache-Control" content="no-cache,must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta name="ROBOTS" content="NOARCHIVE">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+<title>Currículo Lattes</title>
+
+    <style>
+
+      html{background:#fff; }
+      body {background:#fff;}
+      table {font:normal 11px arial}
+      form {height:30%; width:100%}
+      textarea { border:1px solid Gray;font-family:Arial,Helvetica,sans-serif;font-size:11px; }
+      * html input, * html textarea, * html select {font:normal 11px arial}
+
+    </style>
+
+    <style>
+      .win-mid .win-mid-center .win-content {
+         display: block !important;
+         max-height: 285px !important;
+         overflow: hidden !important;
+         padding-bottom: 40px !important;
+         width: 497px !important;
+      }
+      .navegacao2 {
+         height: 293px !important;
+         overflow-x: hidden !important;
+         width: 100% !important;
+      }
+      .tela_menor .conteudo {
+          height: auto !important;
+          max-width: 480px !important;
+          min-width: 430px !important;
+          padding: 5px;
+      }
+      .navegacao .controle_peq {
+         background-color: #E1EAF3 !important;
+         bottom: 0;
+         clear: both !important;
+         height: 38px !important;
+         left: 9px;
+         margin-left: 0;
+         padding-bottom: 0 !important;
+         padding-top: 5px !important;
+         position: absolute;
+         text-align: right !important;
+         width: 499px !important;
+      }
+     </style>
+
+ 
+ 
+ <div>
+<form action="PRC_INST_OUTRA" name="GN_INST_OUTRA2">
+
+
+<style>
+table {font:normal 11px arial; color:#333}
+</style>
+
+
+
+
+        <div class="navegacao2">
+        <fieldset class="tela_menor">
+            <div class="scroller" id="conteudoNavegacao">
+              <div class="conteudo">
+                <em titulo="Seleção de Instituição">
+                  <div id="helpCont0" style="display:none;"><a href="javascript:void(0)" target="blank" id="helpHref"> <img src="/images/estatico/imagens/help-icon_24.gif" border="0" title="Help" style="float:right"></a></div>
+                    Informe os dados da instituição
+                </em>
+                    <span>
+                      <table width="565" border="0" cellpadding="0" cellspacing="0">
+                        <tbody><tr>
+                         <td class="tituloTabela01">
+                           <table width="565" border="0" cellpadding="1" cellspacing="1">
+                            <tbody><tr>
+                             <td class="celulaTabela01" colspan="2">
+                             Nome da instituição<br>
+                             <input type="text" name="f_nme_inst" style="width:250px" maxlength="75">
+                             </td>
+                            </tr>
+                           <tr>
+                           <td colspan="2">
+                           Sigla<br>
+                            <input type="text" name="f_sigla" style="width:100px" maxlength="16">
+                            </td>
+                           </tr>
+                           <tr>
+                            <td width="45%">
+                            País<br>
+                            <select name="f_pais_inst" size="1" style="width:150px" onchange="checkpais();return false;">
+                            <option value="" selected=""></option>
+<option value="RFA">Alemanha
+</option><option value="ARG">Argentina
+</option><option value="AUS">Austrália
+</option><option value="BRA">Brasil
+</option><option value="CAN">Canadá
+</option><option value="ESP">Espanha
+</option><option value="EUA">Estados Unidos
+</option><option value="FRA">França
+</option><option value="GBR">Grã-Bretanha
+</option><option value="HOL">Holanda
+</option><option value="ING">Inglaterra
+</option><option value="ITA">Itália
+</option><option value="POR">Portugal
+</option><option value="AFG">Afeganistão
+</option><option value="AFS">África Do Sul
+</option><option value="ALB">Albânia
+</option><option value="AND">Andorra
+</option><option value="ANG">Angola
+</option><option value="ATC">Antartida
+</option><option value="ANB">Antigua
+</option><option value="AHL">Antilhas Holandesas
+</option><option value="ARA">Arábia Saudita
+</option><option value="ARL">Argélia
+</option><option value="ARM">Armênia
+</option><option value="ABW">Aruba
+</option><option value="AUT">Austria
+</option><option value="AZE">Azerbaijão
+</option><option value="BHS">Bahamas
+</option><option value="BGD">Bangladesh
+</option><option value="BRB">Barbados
+</option><option value="BAR">Barein
+</option><option value="BEA">Belarus
+</option><option value="BEL">Bélgica
+</option><option value="BLZ">Belize
+</option><option value="BEN">Benin
+</option><option value="BER">Bermudas
+</option><option value="BIR">Birmânia
+</option><option value="BOL">Bolívia
+</option><option value="BOS">Bósnia
+</option><option value="BOT">Botsuana
+</option><option value="IOT">Britsh Indian Ocean
+</option><option value="BRN">Brunei
+</option><option value="BUL">Bulgária
+</option><option value="BKF">Burkina Fasso
+</option><option value="BUR">Burundi
+</option><option value="BUT">Butão
+</option><option value="CBV">Cabo Verde
+</option><option value="CAM">Camarões
+</option><option value="CBJ">Camboja
+</option><option value="CAT">Catar
+</option><option value="CAZ">Cazaquistão
+</option><option value="CHA">Chade
+</option><option value="CHL">Chile
+</option><option value="CHN">China
+</option><option value="CHP">Chipre
+</option><option value="CXR">Christmas Island
+</option><option value="CIN">Cingapura
+</option><option value="COL">Colômbia
+</option><option value="COM">Comores
+</option><option value="CON">Congo
+</option><option value="CRN">Coréia Do Norte
+</option><option value="CRS">Coréia Do Sul
+</option><option value="CMF">Costa Do Marfim
+</option><option value="CRC">Costa Rica
+</option><option value="CRO">Croácia
+</option><option value="CUB">Cuba
+</option><option value="DIN">Dinamarca
+</option><option value="DJI">Djibuti
+</option><option value="DON">Dominica
+</option><option value="EGI">Egito
+</option><option value="ELS">El Salvador
+</option><option value="EAU">Emirados Árabes
+</option><option value="EQU">Equador
+</option><option value="ERT">Eritréa
+</option><option value="ESC">Escócia
+</option><option value="SVK">Eslováquia
+</option><option value="SVN">Eslovênia
+</option><option value="EST">Estônia
+</option><option value="ETP">Etiópia
+</option><option value="FJI">Fiji
+</option><option value="FIL">Filipinas
+</option><option value="FIN">Finlândia
+</option><option value="FOR">Formosa
+</option><option value="GAB">Gabão
+</option><option value="GAL">Gales
+</option><option value="GAM">Gâmbia
+</option><option value="GAN">Gana
+</option><option value="GEO">Geórgia
+</option><option value="GIB">Gibraltar
+</option><option value="GRD">Granada
+</option><option value="GRE">Grécia
+</option><option value="GRL">Groênlandia
+</option><option value="GDL">Guadalupe
+</option><option value="GUM">Guam
+</option><option value="GUA">Guatemala
+</option><option value="GUI">Guiana
+</option><option value="GFR">Guiana Francesa
+</option><option value="GNE">Guiné
+</option><option value="GNB">Guiné Bissau
+</option><option value="GNQ">Guiné Equatorial
+</option><option value="HTI">Haiti
+</option><option value="HON">Honduras
+</option><option value="HKG">Hong Kong
+</option><option value="HUN">Hungria
+</option><option value="IEM">Iêmem
+</option><option value="IMS">Iêmen Do Sul
+</option><option value="CYM">Ilhas Cayman
+</option><option value="CCK">Ilhas Cocos
+</option><option value="COK">Ilhas Cook
+</option><option value="FLK">Ilhas Falkland
+</option><option value="IFA">Ilhas Faroe
+</option><option value="IMH">Ilhas Marshall
+</option><option value="MID">Ilhas Midway
+</option><option value="NFK">Ilhas Norfolk
+</option><option value="SLB">Ilhas Salomão
+</option><option value="SHN">Ilhas Santa Helena
+</option><option value="TCA">Ilhas Turcas Caicos
+</option><option value="IVA">Ilhas Vírgens Eua
+</option><option value="VGB">Ilhas Vírgens Gbr
+</option><option value="WAK">Ilhas Wake
+</option><option value="WLF">Ilhas Wallis Futuna
+</option><option value="IND">Índia
+</option><option value="IDN">Indonésia
+</option><option value="IRA">Irã
+</option><option value="IRQ">Iraque
+</option><option value="IRL">Irlanda
+</option><option value="IRN">Irlanda Do Norte
+</option><option value="ISL">Islândia
+</option><option value="ISR">Israel
+</option><option value="IUG">Iugoslávia
+</option><option value="JAM">Jamaica
+</option><option value="JAP">Japão
+</option><option value="JOR">Jordânia
+</option><option value="KIR">Kiribati
+</option><option value="KWT">Kuweit
+</option><option value="LAO">Laos
+</option><option value="LES">Lesoto
+</option><option value="LET">Letônia
+</option><option value="LBN">Líbano
+</option><option value="LBR">Libéria
+</option><option value="LIB">Líbia
+</option><option value="LIE">Liechtenstein
+</option><option value="LIT">Lituânia
+</option><option value="LUX">Luxemburgo
+</option><option value="MAC">Macau
+</option><option value="MCD">Macedônia
+</option><option value="MAD">Madagascar
+</option><option value="MAL">Malásia
+</option><option value="MLV">Malavi
+</option><option value="MDV">Maldivas
+</option><option value="MLI">Mali
+</option><option value="MLT">Malta
+</option><option value="MAR">Marrocos
+</option><option value="MRT">Martinica
+</option><option value="MAU">Maurício
+</option><option value="MTN">Mauritânia
+</option><option value="MEX">México
+</option><option value="MMR">Mianmar
+</option><option value="FSM">Micronésia
+</option><option value="MBQ">Moçambique
+</option><option value="MOL">Moldova
+</option><option value="MON">Mônaco
+</option><option value="MGL">Mongólia
+</option><option value="MNE">Montenegro
+</option><option value="MSR">Montserrat
+</option><option value="NAM">Namíbia
+</option><option value="NRU">Nauru
+</option><option value="NPL">Nepal
+</option><option value="NIC">Nicarágua
+</option><option value="NIG">Niger
+</option><option value="NGA">Nigéria
+</option><option value="NIU">Niue
+</option><option value="NOR">Noruega
+</option><option value="NCL">Nova Caledônia
+</option><option value="NZL">Nova Zelândia
+</option><option value="OMA">Omã
+</option><option value="PCI">Pacific Islands
+</option><option value="PLU">Palau
+</option><option value="PSE">Palestina
+</option><option value="PAN">Panamá
+</option><option value="PNG">Papua Nova Guiné
+</option><option value="PAQ">Paquistão
+</option><option value="PRG">Paraguai
+</option><option value="PER">Peru
+</option><option value="PCN">Pitcairn
+</option><option value="PLF">Polinésia Francesa
+</option><option value="POL">Polônia
+</option><option value="PTR">Porto Rico
+</option><option value="QUE">Quênia
+</option><option value="QUI">Quirgistão
+</option><option value="COD">Rd Congo
+</option><option value="RCA">Rep.Centro-Africana
+</option><option value="DOM">República Dominicana
+</option><option value="TCH">República Tcheca
+</option><option value="RTC">República Tcheca
+</option><option value="REU">Reunião
+</option><option value="ROM">Romênia
+</option><option value="RUA">Ruanda
+</option><option value="RSS">Rússia
+</option><option value="ASM">Samoa Americana
+</option><option value="SAM">Samoa Ocidental
+</option><option value="SMR">San Marino
+</option><option value="LCA">Santa Lúcia
+</option><option value="KNA">São Cristóvão Nevis
+</option><option value="SPM">São Pedro Miquelon
+</option><option value="STP">São Tomé E Príncipe
+</option><option value="VCT">São Vicente Granadi
+</option><option value="SEN">Senegal
+</option><option value="SRL">Serra Leoa
+</option><option value="RS">Sérvia
+</option><option value="SYC">Seychelles
+</option><option value="SIR">Síria
+</option><option value="SOM">Somália
+</option><option value="SRI">Sri Lanka
+</option><option value="SUA">Suazilândia
+</option><option value="SUD">Sudão
+</option><option value="SUE">Suécia
+</option><option value="SUI">Suíça
+</option><option value="SUR">Suriname
+</option><option value="TAD">Tadjaquistão
+</option><option value="TAI">Tailândia
+</option><option value="TAN">Tanzânia
+</option><option value="TMP">Timor Leste
+</option><option value="TGO">Togo
+</option><option value="TKL">Tokelau
+</option><option value="TON">Tonga
+</option><option value="TRT">Trinidad E Tobago
+</option><option value="TUN">Tunísia
+</option><option value="TUC">Turcomenistão
+</option><option value="TUR">Turquia
+</option><option value="TUV">Tuvalu
+</option><option value="UCR">Ucrânia
+</option><option value="UGA">Uganda
+</option><option value="URS">União Soviética
+</option><option value="URU">Uruguai
+</option><option value="UZB">Uzbekistan
+</option><option value="VUT">Vanuatu
+</option><option value="VAT">Vaticano
+</option><option value="VEN">Venezuela
+</option><option value="VTN">Vietnã
+</option><option value="ESH">Western Sahara
+</option><option value="ZAR">Zaire
+</option><option value="ZAN">Zâmbia
+</option><option value="ZIN">Zimbabue
+</option></select>
+</td><td>
+UF
+<br><select name="f_uf" size="1" style="width:50px" onchange="checkuf();return false;">
+<option value="">
+</option><option value="AC">AC
+</option><option value="AL">AL
+</option><option value="AM">AM
+</option><option value="AP">AP
+</option><option value="BA">BA
+</option><option value="CE">CE
+</option><option value="DF">DF
+</option><option value="ES">ES
+</option><option value="GO">GO
+</option><option value="MA">MA
+</option><option value="MG">MG
+</option><option value="MS">MS
+</option><option value="MT">MT
+</option><option value="PA">PA
+</option><option value="PB">PB
+</option><option value="PE">PE
+</option><option value="PI">PI
+</option><option value="PR">PR
+</option><option value="RJ">RJ
+</option><option value="RN">RN
+</option><option value="RO">RO
+</option><option value="RR">RR
+</option><option value="RS">RS
+</option><option value="SC">SC
+</option><option value="SE">SE
+</option><option value="SP">SP
+</option><option value="TO">TO
+</option></select>
+</td>
+                                  </tr>
+                              </tbody></table>
+                          </td>
+                        </tr>
+                   </tbody></table>
+                </span>
+              </div>
+           </div>
+        </fieldset>
+<input type="hidden" name="f_ctr" value="I">
+<input type="hidden" name="f_cod" value="K1237839P9">
+
+        <div class="controle_peq">
+           <span class="botao salvar">
+             <a href="javascript:void(0)" onclick="checkCI();return false;">
+             <span></span>Confirmar</a>
+           </span>
+        </div>
+      </div>
+</form>
+
+
+</div></div><div class="win-bottom-bar" style="text-align: center; display: none;"></div></td><td class="win-mid-right"></td></tr><tr class="win-bottom"><td class="win-bottom-left"></td><td class="win-bottom-center"></td><td class="win-bottom-right"></td></tr></tbody></table></div><div class="win-overlay" style="opacity: 0.75; display: none; height: 420px;"></div><div class="win-wrapper" style="display: none; left: 238.5px; top: 146.5px;"><table class="win-holder"><tbody><tr class="win-top"><td class="win-top-left"></td><td class="win-top-center"></td><td class="win-top-right"></td></tr><tr class="win-mid"><td class="win-mid-left"></td><td class="win-mid-center"><div class="win-header"><div class="win-tools"></div><div class="win-title">Inclusão de participante</div></div><div class="win-content" style="width: 255px; max-height: 340px;"><div class="win-pad"><table><tbody><tr><td><b>Nome completo:</b></td><td><input maxlength="60" type="text" id="nomeAutor"></td></tr><tr><td><b>Nome como citado:</b></td><td><input maxlength="60" type="text" id="nomeAutorComoCitado"></td></tr></tbody></table></div></div><div class="win-bottom-bar" style="text-align: center;"><span class="botao salvar"><a href="javascript:void(0)"><span></span>confirmar</a></span><span class="botao excluir"><a href="javascript:void(0)"><span></span>cancelar</a></span></div></td><td class="win-mid-right"></td></tr><tr class="win-bottom"><td class="win-bottom-left"></td><td class="win-bottom-center"></td><td class="win-bottom-right"></td></tr></tbody></table></div><div class="win-overlay" style="opacity: 0.75; display: none; height: 420px;"></div><div class="win-wrapper" style="display: none; left: 51px; top: 180.5px;"><table class="win-holder"><tbody><tr class="win-top"><td class="win-top-left"></td><td class="win-top-center"></td><td class="win-top-right"></td></tr><tr class="win-mid"><td class="win-mid-left"></td><td class="win-mid-center"><div class="win-header"><div class="win-tools"><a href="javascript:void(0)" class="tool close"></a></div><div class="win-title">Pesquisadores ( Os seus nomes em citação bibliográfica estão em destaque na cor azul )</div></div><div class="win-content" style="width: 630px; max-height: 340px;"><div class="win-pad"><div class="tree-wrapper" style="max-height: 200px;"><ul><li nodeindex="0" dataindex="0"><a href="javascript:void(0)" class="icon item"></a><a href="javascript:void(0)" class="label" style="color:#00f">Angelo Guimarães Rosa Alvares (ALVARES, A. G. R.)</a></li></ul></div></div></div><div class="win-bottom-bar" style="text-align: center; display: none;"></div></td><td class="win-mid-right"></td></tr><tr class="win-bottom"><td class="win-bottom-left"></td><td class="win-bottom-center"></td><td class="win-bottom-right"></td></tr></tbody></table></div></body></html>
