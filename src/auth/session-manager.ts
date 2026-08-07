@@ -17,10 +17,46 @@
 
 import { config } from 'dotenv';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { resolve, join, dirname } from 'path';
+import { execFileSync } from 'child_process';
 
-config({ path: resolve(process.cwd(), '.env') });
+// ── Encrypted env support ────────────────────────────────────────────
+// If .env.age exists and AGE_KEY_FILE is set, decrypt credentials at
+// runtime so the plaintext .env never touches disk.
+function loadEnv(): void {
+  const envPath = resolve(process.cwd(), '.env');
+  const encPath = resolve(process.cwd(), '.env.age');
+  const ageKeyFile = process.env.AGE_KEY_FILE || resolve(process.env.HOME || '/root', '.age', 'lattes-key.txt');
+
+  if (existsSync(encPath) && existsSync(ageKeyFile)) {
+    try {
+      const decrypted = execFileSync('age', ['-d', '-i', ageKeyFile, encPath], {
+        encoding: 'utf-8',
+        timeout: 10_000,
+      });
+      for (const line of decrypted.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx === -1) continue;
+        const key = trimmed.slice(0, eqIdx).trim();
+        const val = trimmed.slice(eqIdx + 1).trim();
+        if (!process.env[key]) process.env[key] = val;
+      }
+      console.error('🔐 Credenciais descriptografadas de .env.age');
+      return;
+    } catch (err) {
+      console.error(`⚠️  Falha ao descriptografar .env.age: ${(err as Error).message}`);
+      console.error('   Tentando fallback para .env...');
+    }
+  }
+
+  // Fallback: plain .env
+  config({ path: envPath });
+}
+
+loadEnv();
 
 const LATTES_MENU_URL_PATTERN = 'cvlattesweb/PKG_MENU.menu';
 const PORTAL_LATTES_URL = 'https://memoria.cnpq.br/web/portal-lattes/';
