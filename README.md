@@ -46,12 +46,27 @@ npx playwright install chromium
 
 ### Login automático (servidor)
 
+As credenciais são armazenadas de forma criptografada com [age](https://github.com/FiloSottile/age).
+
 ```bash
-cp .env.example .env
-# Edite .env com seu CPF (apenas números) e senha
+# 1. Instalar age
+sudo apt install age
+# ou: curl -sL https://github.com/FiloSottile/age/releases/latest/download/age-v1.2.0-linux-amd64.tar.gz | tar xz && sudo mv age/age age/age-keygen /usr/local/bin/
+
+# 2. Gerar keypair
+mkdir -p ~/.age
+age-keygen -o ~/.age/lattes-key.txt
+
+# 3. Criar .env a partir do template criptografado
+cp .env.age.example .env.age
+# Descriptografar, preencher CPF e senha, re-criptografar:
+age -d -i ~/.age/lattes-key.txt .env.age > /tmp/lattes-env
+nano /tmp/lattes-env  # preencher GOVBR_CPF e GOVBR_SENHA
+age -r "SUA_CHAVE_PUBLICA" -o .env.age /tmp/lattes-env
+rm /tmp/lattes-env
 ```
 
-O sistema usará essas credenciais para autenticar via **Login Único CNPq (Keycloak)** em modo headless. Se as credenciais não estiverem configuradas, fará fallback para login interativo com browser gráfico.
+O `session-manager` descriptografa `.env.age` automaticamente em runtime via `age -d`. O plaintext nunca é escrito em disco.
 
 ## 📋 Comandos
 
@@ -113,11 +128,13 @@ Configuração para agentes (Claude Desktop, etc.):
 
 ## 🛡️ Segurança
 
-- **Login automático ou manual**: Credenciais no `.env` (gitignored) para servidor, ou login interativo
+- **Credenciais criptografadas**: `.env.age` criptografado com [age](https://github.com/FiloSottile/age) — plaintext nunca toca o disco
+- **Login automático ou manual**: Credenciais descriptografadas em runtime via `age -d`, ou login interativo
 - **Sessão local**: Cookies em `data/auth/` (gitignored)
 - **Confirmação obrigatória**: Escrita exige `SIM_SALVAR`
 - **Snapshots automáticos**: Screenshots antes/depois de cada operação
 - **Audit log**: Toda ação registrada com timestamp
+- **Arquivo de exemplo**: `.env.age.example` vai pro repo como template; `.env.age` real fica no `.gitignore`
 
 ## 📂 Tipos de campo e como preenchê-los
 
