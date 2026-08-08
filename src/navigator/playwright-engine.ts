@@ -948,7 +948,24 @@ export class LattesNavigator {
         }
       }
 
-      // Strategy 2: Find input/textarea near the label text
+      // Strategy 2: Find by exact name attribute (most reliable for Lattes)
+      const byExactName = await ctx.$(`input[name="${fieldLabel}"], textarea[name="${fieldLabel}"], select[name="${fieldLabel}"]`);
+      if (byExactName) {
+        const tagName = await byExactName.evaluate((el: Element) => el.tagName.toLowerCase());
+        if (tagName === 'select') {
+          await byExactName.selectOption({ label: value });
+        } else {
+          const isDisabled = await byExactName.getAttribute('disabled');
+          if (isDisabled !== null) {
+            await byExactName.evaluate((el: HTMLInputElement) => el.removeAttribute('disabled'));
+          }
+          await byExactName.fill(value);
+        }
+        this.log('fillField', { fieldLabel, value: value.substring(0, 50), strategy: 'exact-name' });
+        return { success: true };
+      }
+
+      // Strategy 3: Find input/textarea near the label text
       const nearField = await ctx.$(`text="${fieldLabel}" >> .. >> input, text="${fieldLabel}" >> .. >> textarea, text="${fieldLabel}" >> .. >> select`);
       if (nearField) {
         const tagName = await nearField.evaluate((el: Element) => el.tagName.toLowerCase());
@@ -960,7 +977,7 @@ export class LattesNavigator {
         return { success: true };
       }
 
-      // Strategy 3: Find by name attribute
+      // Strategy 4: Find by partial name/id match (case-insensitive)
       const byName = await ctx.$(`[name*="${fieldLabel}" i], [id*="${fieldLabel}" i]`);
       if (byName) {
         await byName.fill(value);
@@ -1023,10 +1040,15 @@ export class LattesNavigator {
         return { success: false, error: 'Botão Salvar não encontrado' };
       }
 
-      // Remove any overlay divs that might block the click
+      // Remove any overlay divs that might block the click (in both page and frame)
       await this.page.evaluate(() => {
         document.querySelectorAll('.overlayDiv, .blockUI, .blockOverlay').forEach(el => el.remove());
       }).catch(() => {});
+      if (ctx !== this.page && 'evaluate' in ctx) {
+        await (ctx as Frame).evaluate(() => {
+          document.querySelectorAll('.overlayDiv, .blockUI, .blockOverlay').forEach(el => el.remove());
+        }).catch(() => {});
+      }
 
       await saveBtn.click({ force: true });
       await this.page.waitForTimeout(3000);
@@ -1034,12 +1056,17 @@ export class LattesNavigator {
       // Post-save snapshot
       const postSave = await this.takeSnapshot('post_save');
 
-      // Check for success or error messages
+      // Check for success or error messages IN THE FRAME (not the main page)
       const successIndicators = ['sucesso', 'salvo', 'gravado', 'cadastrado'];
-      const errorIndicators = ['erro', 'error', 'falha', 'obrigatório'];
+      const errorIndicators = ['obrigatório', 'preencha', 'campo obrigatório'];
 
-      const pageText = await this.page.textContent('body') || '';
-      const lowerText = pageText.toLowerCase();
+      let checkText = '';
+      if (ctx !== this.page && 'textContent' in ctx) {
+        checkText = await (ctx as Frame).textContent('body').catch(() => '') || '';
+      } else {
+        checkText = await this.page.textContent('body') || '';
+      }
+      const lowerText = checkText.toLowerCase();
 
       const hasError = errorIndicators.some(ind => lowerText.includes(ind));
       const hasSuccess = successIndicators.some(ind => lowerText.includes(ind));

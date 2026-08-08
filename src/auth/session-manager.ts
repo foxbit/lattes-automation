@@ -359,7 +359,8 @@ export class SessionManager {
 
     console.log('🔄 Tentando restaurar sessão salva...');
 
-    this.browser = await chromium.launch({ headless: false });
+    const hasDisplay = !!process.env.DISPLAY;
+    this.browser = await chromium.launch({ headless: !hasDisplay });
     this.context = await this.browser.newContext({
       storageState: SESSION_FILE,
       viewport: { width: 1280, height: 900 },
