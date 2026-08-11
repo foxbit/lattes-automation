@@ -1056,30 +1056,53 @@ export class LattesNavigator {
       // Post-save snapshot
       const postSave = await this.takeSnapshot('post_save');
 
-      // Check for success or error messages IN THE FRAME (not the main page)
-      // IMPORTANT: only check VISIBLE dialog elements, not JS source code strings
-      const errorIndicators = ['obrigatório não informado', 'Não foi possível atualizar', 'preencha'];
-
+      // Check for success or error messages - check BOTH the form frame AND the main page
+      // (Lattes shows validation dialogs in the parent/main page, not the form iframe)
       let hasError = false;
       let errorText = '';
-      if (ctx !== this.page && 'evaluate' in ctx) {
-        // Look for a visible "Atenção" dialog or visible error messages
-        const dialogCheck = await (ctx as Frame).evaluate(() => {
-          // Find visible dialog elements
-          const dialogs = Array.from(document.querySelectorAll('.win-wrapper, .caixaMsg, [class*="dialog"], [class*="modal"]'))
-            .filter(el => (el as HTMLElement).offsetParent !== null || getComputedStyle(el).display !== 'none');
+
+      const checkError = async (target: Frame | Page): Promise<{ found: boolean; text: string }> => {
+        return (target as any).evaluate(() => {
+          const errorMarkers = ['Não foi possível', 'obrigatório não informado', 'não foi possível atualizar'];
           
-          for (const dlg of dialogs) {
+          // 1. Check known dialog containers
+          const containers = document.querySelectorAll('.win-wrapper, .caixaMsg, [class*="dialog"], [class*="modal"], [id*="msg"], [class*="erro"], [class*="aviso"], .mensagem, .win-message');
+          for (const dlg of containers) {
+            if ((dlg as HTMLElement).offsetParent === null && getComputedStyle(dlg).display === 'none') continue;
             const text = dlg.textContent || '';
-            if (text.includes('Não foi possível') || text.includes('obrigatório não informado')) {
+            if (errorMarkers.some(m => text.toLowerCase().includes(m.toLowerCase()))) {
               return { found: true, text: text.substring(0, 500) };
             }
           }
+          
+          // 2. Fallback: scan all elements for visible text with error markers
+          const all = document.querySelectorAll('div, span, td, table, p');
+          for (const el of all) {
+            if ((el as HTMLElement).offsetParent === null && getComputedStyle(el).display === 'none') continue;
+            const text = (el.textContent || '').trim();
+            if (text.length < 10 || text.length > 800) continue;
+            if (errorMarkers.some(m => text.toLowerCase().includes(m.toLowerCase()))) {
+              return { found: true, text: text.substring(0, 500) };
+            }
+          }
+          
           return { found: false, text: '' };
         }).catch(() => ({ found: false, text: '' }));
-        
-        hasError = dialogCheck.found;
-        errorText = dialogCheck.text;
+      };
+
+      if (ctx !== this.page && 'evaluate' in ctx) {
+        const frameCheck = await checkError(ctx);
+        if (frameCheck.found) {
+          hasError = true;
+          errorText = frameCheck.text;
+        }
+      }
+      if (!hasError) {
+        const pageCheck = await checkError(this.page);
+        if (pageCheck.found) {
+          hasError = true;
+          errorText = pageCheck.text;
+        }
       }
 
       if (hasError) {
@@ -1220,37 +1243,52 @@ export class LattesNavigator {
               }
             }, { name: nameAttr, term: searchTerm });
 
-            await this.page.waitForTimeout(4000);
+            await this.page.waitForTimeout(6000);
 
             // Click result - results are <a> links WITHOUT onclick scattered in the page
             // (NOT in .areaSelecao which stays empty/display:none)
             let selected = false;
 
-            // Strategy A: find ANY link in CV3 frame matching search term (case-insensitive)
-            const matchingLink = await cv3Frame.$(`a:has-text("${searchTerm}")`);
-            if (matchingLink) {
-              await matchingLink.click();
-              await this.page.waitForTimeout(2000);
-              this.log('fillLupa:selected', { searchTerm, strategy: 'link-text' });
-              selected = true;
-            }
-
-            // Strategy B: evaluate - find link containing searchTerm (case-insensitive)
-            if (!selected) {
+            // Strategy A (BEST): scored evaluation - prefer educational institutions,
+            // exact matches, and longer names for acronyms. This avoids clicking
+            // "Centro de Estudos Juridicos da UFPR" when searching "UFPR".
+            {
               const clicked = await cv3Frame.evaluate((term: string) => {
                 const links = document.querySelectorAll('a');
+                const matches: Array<{ el: HTMLElement; text: string; score: number }> = [];
                 for (const link of links) {
                   const text = (link.textContent || '').trim();
-                  if (text.toLowerCase().includes(term.toLowerCase())) {
-                    (link as HTMLElement).click();
-                    return { clicked: true, text: text.substring(0, 80) };
-                  }
+                  if (!text || text.length < 5 || text === 'Cadastrar nova instituição') continue;
+                  if (!text.toLowerCase().includes(term.toLowerCase())) continue;
+                  let score = 0;
+                  // Exact match or starts with term → higher score
+                  if (text.toLowerCase() === term.toLowerCase()) score += 10;
+                  else if (text.toLowerCase().startsWith(term.toLowerCase())) score += 5;
+                  // Educational institutions preferred
+                  if (/universidade|centro universitário|faculdade|instituto|escola|univ/i.test(text)) score += 3;
+                  // Short acronym in term (UFPR, FIAP) → prefer longer institution names
+                  if (term.length <= 6 && text.length > 20) score += 2;
+                  matches.push({ el: link as HTMLElement, text: text.substring(0, 80), score });
                 }
-                return { clicked: false };
+                if (matches.length === 0) return { clicked: false };
+                matches.sort((a, b) => b.score - a.score);
+                matches[0].el.click();
+                return { clicked: true, text: matches[0].text, score: matches[0].score };
               }, searchTerm);
               if (clicked.clicked) {
                 await this.page.waitForTimeout(2000);
-                this.log('fillLupa:selected', { searchTerm, strategy: 'evaluate-text', text: clicked.text });
+                this.log('fillLupa:selected', { searchTerm, strategy: 'scored', text: clicked.text, score: clicked.score });
+                selected = true;
+              }
+            }
+
+            // Strategy B: find ANY link in CV3 frame matching search term (case-insensitive)
+            if (!selected) {
+              const matchingLink = await cv3Frame.$(`a:has-text("${searchTerm}")`);
+              if (matchingLink) {
+                await matchingLink.click();
+                await this.page.waitForTimeout(2000);
+                this.log('fillLupa:selected', { searchTerm, strategy: 'link-text' });
                 selected = true;
               }
             }
