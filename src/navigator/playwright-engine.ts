@@ -1057,22 +1057,33 @@ export class LattesNavigator {
       const postSave = await this.takeSnapshot('post_save');
 
       // Check for success or error messages IN THE FRAME (not the main page)
-      const successIndicators = ['sucesso', 'salvo', 'gravado', 'cadastrado'];
-      const errorIndicators = ['obrigatório', 'preencha', 'campo obrigatório'];
+      // IMPORTANT: only check VISIBLE dialog elements, not JS source code strings
+      const errorIndicators = ['obrigatório não informado', 'Não foi possível atualizar', 'preencha'];
 
-      let checkText = '';
-      if (ctx !== this.page && 'textContent' in ctx) {
-        checkText = await (ctx as Frame).textContent('body').catch(() => '') || '';
-      } else {
-        checkText = await this.page.textContent('body') || '';
+      let hasError = false;
+      let errorText = '';
+      if (ctx !== this.page && 'evaluate' in ctx) {
+        // Look for a visible "Atenção" dialog or visible error messages
+        const dialogCheck = await (ctx as Frame).evaluate(() => {
+          // Find visible dialog elements
+          const dialogs = Array.from(document.querySelectorAll('.win-wrapper, .caixaMsg, [class*="dialog"], [class*="modal"]'))
+            .filter(el => (el as HTMLElement).offsetParent !== null || getComputedStyle(el).display !== 'none');
+          
+          for (const dlg of dialogs) {
+            const text = dlg.textContent || '';
+            if (text.includes('Não foi possível') || text.includes('obrigatório não informado')) {
+              return { found: true, text: text.substring(0, 500) };
+            }
+          }
+          return { found: false, text: '' };
+        }).catch(() => ({ found: false, text: '' }));
+        
+        hasError = dialogCheck.found;
+        errorText = dialogCheck.text;
       }
-      const lowerText = checkText.toLowerCase();
 
-      const hasError = errorIndicators.some(ind => lowerText.includes(ind));
-      const hasSuccess = successIndicators.some(ind => lowerText.includes(ind));
-
-      if (hasError && !hasSuccess) {
-        return { success: false, error: 'Possível erro detectado após salvamento', screenshot: postSave };
+      if (hasError) {
+        return { success: false, error: errorText.substring(0, 300), screenshot: postSave };
       }
 
       return { success: true, screenshot: postSave };
@@ -1177,8 +1188,8 @@ export class LattesNavigator {
         if (cv3Frame) {
           this.log('fillLupa:modalCV3', { url: cv3Frame.url() });
 
-          // Find search input and type
-          const searchInput = await cv3Frame.$('input[type="text"], input[name]');
+          // Find search input - MUST be the text input (f_nome), not hidden inputs
+          const searchInput = await cv3Frame.$('input[name="f_nome"], input[type="text"]:not([type="hidden"])');
           if (searchInput) {
             const nameAttr = await searchInput.getAttribute('name') || '';
             // Fill search term
@@ -1187,43 +1198,121 @@ export class LattesNavigator {
               if (inp) {
                 inp.value = term;
                 inp.dispatchEvent(new Event('input', { bubbles: true }));
-                // Find and click search button via vanilla JS
-                const all = document.querySelectorAll('a, input[type="submit"], input[type="button"], button');
+
+                // 1. Try clicking the magnifier/search image or link
+                const all = document.querySelectorAll('img, a, input[type="submit"], input[type="button"], button');
                 for (const el of all) {
-                  if (el.textContent?.includes('Pesquisar') || (el as HTMLInputElement).value?.includes('Pesquisar')) {
+                  const src = (el as HTMLImageElement).src || '';
+                  const alt = (el as HTMLImageElement).alt || '';
+                  const oc = el.getAttribute('onclick') || '';
+                  const val = (el as HTMLInputElement).value || '';
+                  if (src.includes('lupa') || src.includes('pesquisar') || src.includes('pesq') ||
+                      alt.toLowerCase().includes('pesquisar') || oc.includes('recuperaInstMacro') ||
+                      val.includes('Pesquisar')) {
                     (el as HTMLElement).click();
-                    break;
+                    return;
                   }
                 }
+
+                // 2. Fallback: submit the institution search form directly
+                const form = document.querySelector('form[name="instituicaoForm"]') as HTMLFormElement | null;
+                if (form) form.submit();
               }
             }, { name: nameAttr, term: searchTerm });
 
-            await this.page.waitForTimeout(3000);
+            await this.page.waitForTimeout(4000);
 
-            // Click first result
-            const firstResult = await cv3Frame.$('tr[onclick], a[onclick], .resultado a, table tr:nth-child(2)');
-            if (firstResult) {
-              await firstResult.click();
+            // Click result - results are <a> links WITHOUT onclick scattered in the page
+            // (NOT in .areaSelecao which stays empty/display:none)
+            let selected = false;
+
+            // Strategy A: find ANY link in CV3 frame matching search term (case-insensitive)
+            const matchingLink = await cv3Frame.$(`a:has-text("${searchTerm}")`);
+            if (matchingLink) {
+              await matchingLink.click();
               await this.page.waitForTimeout(2000);
-              this.log('fillLupa:selected', { searchTerm });
+              this.log('fillLupa:selected', { searchTerm, strategy: 'link-text' });
+              selected = true;
+            }
 
-              // Close any overlay that might remain from modalCV3
+            // Strategy B: evaluate - find link containing searchTerm (case-insensitive)
+            if (!selected) {
+              const clicked = await cv3Frame.evaluate((term: string) => {
+                const links = document.querySelectorAll('a');
+                for (const link of links) {
+                  const text = (link.textContent || '').trim();
+                  if (text.toLowerCase().includes(term.toLowerCase())) {
+                    (link as HTMLElement).click();
+                    return { clicked: true, text: text.substring(0, 80) };
+                  }
+                }
+                return { clicked: false };
+              }, searchTerm);
+              if (clicked.clicked) {
+                await this.page.waitForTimeout(2000);
+                this.log('fillLupa:selected', { searchTerm, strategy: 'evaluate-text', text: clicked.text });
+                selected = true;
+              }
+            }
+
+            // Strategy C: click the FIRST result link (any link with text length > 5)
+            if (!selected) {
+              const firstLink = await cv3Frame.evaluate(() => {
+                const links = document.querySelectorAll('a');
+                for (const link of links) {
+                  const text = (link.textContent || '').trim();
+                  if (text.length > 5 && text.includes('(')) {
+                    (link as HTMLElement).click();
+                    return { clicked: true, text: text.substring(0, 80) };
+                  }
+                }
+                return { clicked: false };
+              });
+              if (firstLink.clicked) {
+                await this.page.waitForTimeout(2000);
+                this.log('fillLupa:selected', { searchTerm, strategy: 'first-link', text: firstLink.text });
+                selected = true;
+              }
+            }
+
+            // Strategy D: legacy selectors (tr[onclick], a[onclick])
+            if (!selected) {
+              const firstResult = await cv3Frame.$('tr[onclick], a[onclick], .resultado a, table tr:nth-child(2)');
+              if (firstResult) {
+                await firstResult.click();
+                await this.page.waitForTimeout(2000);
+                this.log('fillLupa:selected', { searchTerm, strategy: 'legacy' });
+                selected = true;
+              }
+            }
+
+            if (selected) {
+              // Close modalCV3: click Fechar button in CV3 frame if present
+              const fecharBtn = await cv3Frame.$('input[value="Fechar"], a:has-text("Fechar"), a[onclick*="fechar"], input[onclick*="fechar"]');
+              if (fecharBtn) {
+                await fecharBtn.click().catch(() => {});
+                await this.page.waitForTimeout(1000);
+              }
+
+              // Remove ALL overlays (multiple overlayDiv exist)
+              // NOTE: do NOT press Escape - it closes modalCV2 (the form) too!
               await this.page.evaluate(() => {
-                const overlay = document.querySelector('.overlayDiv');
-                if (overlay) overlay.remove();
+                document.querySelectorAll('.overlayDiv, .blockUI, .blockOverlay, .win-overlay').forEach(el => el.remove());
               }).catch(() => {});
-              await this.page.keyboard.press('Escape').catch(() => {});
               await this.page.waitForTimeout(500);
 
               return { success: true };
             }
           }
           // Close modalCV3 if still open
+          const fecharBtn = await cv3Frame.$('input[value="Fechar"], a:has-text("Fechar"), a[onclick*="fechar"], input[onclick*="fechar"]');
+          if (fecharBtn) {
+            await fecharBtn.click().catch(() => {});
+            await this.page.waitForTimeout(500);
+          }
           await this.page.evaluate(() => {
-            const overlay = document.querySelector('.overlayDiv');
-            if (overlay) overlay.remove();
+            document.querySelectorAll('.overlayDiv, .blockUI, .blockOverlay, .win-overlay').forEach(el => el.remove());
           }).catch(() => {});
-          await this.page.keyboard.press('Escape').catch(() => {});
         }
       }
 

@@ -53,7 +53,7 @@ function loadEnv(): void {
   }
 
   // Fallback: plain .env
-  config({ path: envPath });
+  config({ path: envPath, quiet: true });
 }
 
 loadEnv();
